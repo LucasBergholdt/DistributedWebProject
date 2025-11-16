@@ -1,0 +1,11 @@
+{% extends 'base.html' %}
+
+{% block body%}
+<h1> Choose which type of account you want to sign up as </h1>
+
+<p><a href="{{ url_for('register/seeker')}}">Sign up as a seeker</a></p>
+<p><a href="{{ url_for('register/provider')}}">Sign up as a provider</a></p>
+
+{% endblock body%}
+
+

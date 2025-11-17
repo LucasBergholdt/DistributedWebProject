@@ -2,14 +2,11 @@
 from flask import Flask, current_app, session, redirect, render_template, request, url_for, flash
 
 from flask_sqlalchemy import SQLAlchemy
-from flask_login import LoginManager, UserMixin, login_user, logout_user, login_required, current_user
+from flask_login import LoginManager, login_user, logout_user, login_required, current_user, UserMixin
 from flask_bcrypt import Bcrypt
 from flask_principal import Principal, Permission, RoleNeed, UserNeed, Identity, AnonymousIdentity, identity_changed, identity_loaded
-
-from wtforms import Form, SubmitField, SelectField, StringField, EmailField, PasswordField, BooleanField, ValidationError
-from wtforms.validators import DataRequired, Length, Email, EqualTo
-
-from .forms import RegistrationFormSeeker, RegistrationFormProvider, LoginForm
+from wtforms import IntegerField, DateTimeField, DecimalField, FileField, Form, SubmitField, SelectField, StringField, EmailField, PasswordField, BooleanField, ValidationError
+from wtforms.validators import DataRequired, Length, Email, EqualTo, InputRequired
 
 
 
@@ -27,127 +24,149 @@ db = SQLAlchemy(app)
 bcrypt = Bcrypt(app)  #object used for encrypting and decrypting.
 
 
-# Abstract User Class!
+# Initialize Principal Extension and create Permissions
+principals = Principal(app)
+seeker_permission = Permission(RoleNeed("seeker"))
+provider_permission = Permission(RoleNeed("provider"))
+
+
+# -------------------- MODEL ----------------------- #
+
+
 class User(UserMixin, db.Model):
-  """
-  User model representing a user in the application.
-  Inherits from both UserMixin and db.Model to integrate Flask-Login and SQLAlchemy.
-
-  UserMixin provides default implementations for the methods that Flask-Login
-  expects user objects to have:
-  - is_authenticated: Property that should return True if the user is authenticated.
-  - is_active: Property that should return True if the user is active.
-  - is_anonymous: Property that should return False for regular users.
-  - get_id(): Method that returns a unique identifier for the user as a string.
-
-  By inheriting from UserMixin, the User class automatically gets these methods,
-  making it compatible with Flask-Login's user management system.
-  """
-  # Primary key
-  id = db.Column(db.Integer, primary_key=True)
-  # User's email, it is used as user identification during authentication so must be unique but it can be changed over time
-  email      = db.Column(db.String(60), unique=True, index=True)
-  # User's password, stored as a hash
-  password   = db.Column(db.String(80))
-  # User's name, not used for identification (just an example of an extra field)
-  name = db.Column(db.String(80), nullable=False)
-
-  # User's role, used for role-based access control. "seeker", "provider"
-  role = db.Column(db.String(80), nullable=False)
-
-    # Description of user
-  description = db.Column(db.String(500))
-
-
-
-  def check_password(self, password):
     """
-    Check if the provided password matches the stored hash.
+    User model representing a user in the application.
+    Inherits from both UserMixin and db.Model to integrate Flask-Login and SQLAlchemy.
 
-    Args:
-        password (str): The password to check.
+    UserMixin provides default implementations for the methods that Flask-Login
+    expects user objects to have:
+    - is_authenticated: Property that should return True if the user is authenticated.
+    - is_active: Property that should return True if the user is active.
+    - is_anonymous: Property that should return False for regular users.
+    - get_id(): Method that returns a unique identifier for the user as a string.
 
-    Returns:
-        bool: True if the password matches, False otherwise.
+    By inheriting from UserMixin, the User class automatically gets these methods,
+    making it compatible with Flask-Login's user management system.
     """
-    return bcrypt.check_password_hash(self.password, password)
 
-  @classmethod  #Class Method: Static Method men som tager imod selve classen som første argument. Tillader os her at constructe en class user og returne den.
-  def create_user(cls, role, name, email, password):
-    """
-    Create a new user with the provided details.
+    __tablename__ = 'users'
 
-    Args:
-        name (str): The user's name.
-        email (str): The user's email.
-        password (str): The user's password, which will be hashed before storage.
+    # Primary key
+    id = db.Column(db.Integer, primary_key=True)
+    # User's email, it is used as user identification during authentication so must be unique but it can be changed over time
+    email      = db.Column(db.String(60), unique=True, index=True)
+    # User's password, stored as a hash
+    password   = db.Column(db.String(80))
+    # User's name, not used for identification (just an example of an extra field)
+    name = db.Column(db.String(80), nullable=False)
+    # User's role, used for role-based access control. "seeker", "provider"
+    role = db.Column(db.String(80), nullable=False)
 
-    Returns:
-        User: The newly created user object.
-    """
+    # Attributes of user. Mostly relevant for a Seeker. These fields can be left NULL for a Provider.
+    description = db.Column(db.String(500), nullable=True)
+
+    birthdate = db.Column(db.String(80), nullable=True)
+
+    gender = db.Column(db.String(80), nullable=True)
+
+    occupation = db.Column(db.String(80), nullable=True)
+
+    image = db.Column(db.String(500), nullable=True)
+
+    def check_password(self, password):
+        """
+        Check if the provided password matches the stored hash.
+
+        Args:
+            password (str): The password to check.
+
+        Returns:
+            bool: True if the password matches, False otherwise.
+        """
+        return bcrypt.check_password_hash(self.password, password)
+
+    # TODO: Skal description+birthdate etc også angives ved User Registration? Tag beslutning om dette.
+    @classmethod  #Class Method: Static Method men som tager imod selve classen som første argument. Tillader os her at constructe en class user og returne den.
+    def create_user(cls, role, name, email, password):
+      """
+      Create a new user with the provided details.
+
+      Args:
+          name (str): The user's name.
+          email (str): The user's email.
+          password (str): The user's password, which will be hashed before storage.
+
+      Returns:
+          User: The newly created user object.
+      """
+      
+      user = cls( role     = role.strip(),
+                  name     = name.strip(),
+                  email    = email.strip(),
+                  password = bcrypt.generate_password_hash(password).decode('utf-8'),
+
+                )
+                  # evt også image.
+      db.session.add(user)
+      db.session.commit()
+      return user
+
+      """ Brug til senere
+                        description = description.strip(),
+                  birthdate = birthdate.strip(),
+                  gender = gender.strip(),
+                  occupation = occupation.strip()
+      
+      
+      """
+
+    @staticmethod #Static Method. Modtager ikke et implicit first argument.
+    def get_by_id(id):
+      """
+      Retrieve a user by their ID.
+
+      Args:
+          id (int): The user's ID.
+
+      Returns:
+          User: The user object if found, otherwise None.
+      """
+      return User.query.filter_by(id=id).first()
+
+    @staticmethod
+    def get_by_email(email):
+      """
+      Retrieve a user by their email.
+
+      Args:
+          email (str): The user's email.
+
+      Returns:
+          User: The user object if found, otherwise None.
+      """
+      return User.query.filter_by(email=email.strip()).first()
     
-    user = cls( role     = role.strip(),
-                name     = name.strip(),
-                email    = email.strip(),
-                password = bcrypt.generate_password_hash(password).decode('utf-8') )
-    db.session.add(user)
-    db.session.commit()
-    return user
+    @staticmethod
+    def email_exists(email):
+      """
+      Check if an email already exists in the database.
 
-  @staticmethod #Static Method. Modtager ikke et implicit first argument.
-  def get_by_id(id):
-    """
-    Retrieve a user by their ID.
+      Args:
+          email (str): The email to check.
 
-    Args:
-        id (int): The user's ID.
+      Returns:
+          bool: True if the email exists, False otherwise.
+      """
+      email = User.query.filter_by(email=email).first()
+      return email is not None
+      
+class Collective(db.Model):
+    __tablename__ = 'collectives'
 
-    Returns:
-        User: The user object if found, otherwise None.
-    """
-    return User.query.filter_by(id=id).first()
+    id = db.Column(db.Integer, primary_key=True)
+    submitter_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False)
 
-  @staticmethod
-  def get_by_email(email):
-    """
-    Retrieve a user by their email.
-
-    Args:
-        email (str): The user's email.
-
-    Returns:
-        User: The user object if found, otherwise None.
-    """
-    return User.query.filter_by(email=email.strip()).first()
-  
-  @staticmethod
-  def email_exists(email):
-    """
-    Check if an email already exists in the database.
-
-    Args:
-        email (str): The email to check.
-
-    Returns:
-        bool: True if the email exists, False otherwise.
-    """
-    email = User.query.filter_by(email=email).first()
-    return email is not None
-  
-class Seeker(User):
-    __tablename__ = 'seekers'
-
-    birthdate = db.Column(db.String(80))
-
-    gender = db.Column(db.String(80))
-
-    occupation = db.Column(db.String(80))
-
-    image = db.Column(db.String(500))
-
-
-class Provider(User):
-    __tablename__ = 'providers'
+    description = db.Column(db.String(500))
 
     address = db.Column(db.String(500))
   
@@ -159,45 +178,170 @@ class Provider(User):
 
     # images?
 
+    # TODO: Skal nok være statitc methods eller have self som første parameter? Kan egentlig godt lide Application.get_all() f.eks. -> mere deskriptivt.
+
+    @staticmethod
+    def get_all():
+        """Get all Collectives"""
+        return Collective.query.order_by(Collective.id).all()
+
+    @staticmethod
+    def get_by_submitter(user_id):
+        """Get all Collectives submitted by a specific user"""
+        return Collective.query.filter_by(submitter_id=user_id).all()
+    
+
+    def create_collective(cls, submitter_id, address, space, slotsTotal, vacantSlots, description):
+      """
+      Create a new collective with the provided details.
+
+      Args:
+          name (str): The collective's name.
+          email (str): The collective's email.
+          password (str): The collective's password, which will be hashed before storage.
+
+      Returns:
+          collective: The newly created collective object.
+      """
+      
+      collective = cls(
+          submitter_id = submitter_id,
+          address = address.strip(),
+          space = space.strip(),
+          slotsTotal = slotsTotal.strip(),
+          vacantSlots = vacantSlots.strip(),
+          description = description.strip()
+          # evt også image.
+      )
+                  
+      db.session.add(collective)
+      db.session.commit()
+      return collective
+
+
 class Application(db.Model):
     """Placeholder Application model """
     __tablename__ = 'applications'
 
     id = db.Column(db.Integer, primary_key=True)
     submitter_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False)
+    collective_id = db.Column(db.Integer, db.ForeignKey('collectives.id'), nullable=False)
 
     time_of_submission = db.Column(db.DateTime, nullable=False)
-
-    status = db.Column(db.Enum('unhandled', 'forwarded', 'approved', 'rejected', 'needs_info', name='Application_status'), default='unhandled')
-
-    # Relationship: one Application has one user
-    user = db.relationship('User', back_populates='Applications')
+    applicationtext = db.Column(db.String(500))
 
     # TODO: Skal nok være statitc methods eller have self som første parameter? Kan egentlig godt lide Application.get_all() f.eks. -> mere deskriptivt.
+    @staticmethod
     def get_all():
         """Get all Applications"""
-        return Application.query.all()
-
+        return Application.query.order_by(Application.id).all()
+    
+    @staticmethod
     def get_by_submitter(user_id):
         """Get all Applications submitted by a specific user"""
         return Application.query.filter_by(submitter_id=user_id).all()
     
-    def get_managed_Applications(user):
-        """Get all Applications from users managed by the given user"""
-        managed_user_ids = [u.id for u in user.managed_users]
-        return Application.query.filter(Application.submitter_id.in_(managed_user_ids)).all()
+    @staticmethod
+    def get_by_collective(collective_id):
+        """Get all Applications submitted by a specific user"""
+        return Application.query.filter_by(collective_id=collective_id).all()
     
-    def can_update(self, user):
-        """Returns whether a user can change status and all the allowed statuses to choose from: (bool, allowed_statuses)"""
-        role = user.role.name
-        if role == "accountant" and self.status != "approved":
-            return True, ["forwarded", "rejected"]
-        elif role == "manager" and self.submitter_id != user.id and self.status == "forwarded":
-            return True, ["approved", "rejected", "needs_info"]
-        elif role == "admin":
-            return True, ["unhandled", "forwarded", "approved", "rejected", "needs_info"]
-        else:
-            return False, []
+    @classmethod  #Class Method: Static Method men som tager imod selve classen som første argument. Tillader os her at constructe en class user og returne den.
+    def create_application(cls, submitter_id, collective_id, applicationtext):
+      """
+      Create a new application with the provided details.
+
+      Args:
+          name (str): The application's name.
+          email (str): The application's email.
+          password (str): The application's password, which will be hashed before storage.
+
+      Returns:
+          application: The newly created application object.
+      """
+      
+      application = cls(
+          submitter_id        = submitter_id,
+          collective_id       = collective_id,
+          applicationtext     = applicationtext.strip(),
+          # evt også image.
+      )
+                  
+      db.session.add(application)
+      db.session.commit()
+      return application
+    
+
+# Clears the database and create tables within the application context
+with app.app_context():
+  db.drop_all()
+  db.create_all()
+
+# -------------------------------- FORMS ------------------------------------- #
+# Custom validator to check if an email already exists
+# In WTForms custom validators must accept parameters form and field. So it is specified here even though it is not used.
+def email_exists(form, field):
+  if User.email_exists(field.data):
+    raise ValidationError('Email already exists.')
+
+# WTForms for user registration.
+
+class RegistrationForm(Form):
+  role = SelectField('Role', 
+                         choices=[('seeker', 'Seeker'), ('provider', 'Provider')], 
+                         validators=[DataRequired()])
+  name = StringField('Name', validators=[DataRequired(), Length(min=1, max=80, message='You cannot have less than 1 or more than 80 characters')])
+  email = EmailField('Email', validators=[DataRequired(), email_exists, Email()])
+  password = PasswordField('Password', validators=[DataRequired(), EqualTo('confirm', message='Password must match')])
+  confirm = PasswordField('Confirm', validators=[DataRequired()])
+  submit = SubmitField('Register')
+
+
+"""
+for opdatering af profil:
+
+ description = StringField('Describe yourself', validators=[DataRequired(), Length(min=1, max=80, message='You cannot have less than 1 or more than 80 characters')])
+  birthdate = StringField('Birthdate', validators=[DataRequired(), Length(min=1, max=80, message='You cannot have less than 1 or more than 80 characters')])
+  gender = StringField('Gender', validators=[DataRequired(), Length(min=1, max=80, message='You cannot have less than 1 or more than 80 characters')])
+  occupation = StringField('Occupation', validators=[DataRequired(), Length(min=1, max=80, message='You cannot have less than 1 or more than 80 characters')])
+  image = StringField('Image', validators=[DataRequired(), Length(min=1, max=80, message='You cannot have less than 1 or more than 80 characters')])
+
+"""
+
+
+class CollectiveForm(Form):
+  address = StringField('Address of collective', validators=[DataRequired(), Length(min=1, max=80, message='You cannot have less than 1 or more than 80 characters')])
+  space = IntegerField('Amount of space (square meters)', validators=[DataRequired(), Length(min=1, max=80, message='You cannot have less than 1 or more than 80 characters')])
+  slotsTotal = IntegerField('Amount of residents that the collective can hold', validators=[DataRequired(), Length(min=1, max=80, message='You cannot have less than 1 or more than 80 characters')])
+  vacantSlots = IntegerField('Amount of available slots in the collective', validators=[DataRequired(), Length(min=1, max=80, message='You cannot have less than 1 or more than 80 characters')])
+  description = StringField('Description of the collective', validators=[DataRequired(), Length(min=1, max=80, message='You cannot have less than 1 or more than 80 characters')])
+  submit = SubmitField('Register your collective')
+
+class ApplicationForm(Form):
+  applicationtext = StringField('Your application', validators=[DataRequired(), Length(min=1, max=80, message='You cannot have less than 1 or more than 80 characters')])
+  submit = SubmitField('Apply for this collective')
+
+
+# WARNING --------------------------------------------------------------------
+# Checking if an email is already registered during form validation introduces 
+# a potential security risk. An attacker can use the registration form to check 
+# if an email is already registered, effectively allowing them to enumerate 
+# valid user emails. A more secure approach is to always return a success 
+# message (e.g., "A confirmation email has been sent") regardless of whether 
+# the email is already registered. This prevents attackers from determining 
+# which emails are registered in the system. This example uses this insecure 
+# solution for simplicity as this is purely a demonstration of the session 
+# handling infrastructure.
+# -----------------------------------------------------------------------------
+
+# WTForms for user login
+class LoginForm(Form):
+  email = EmailField('Email', validators=[DataRequired(), Email()])
+  password = PasswordField('Password', validators=[DataRequired()])
+  remember = BooleanField('Remember Me')
+  submit = SubmitField('Login')
+
+
 
 # SESSIONS --------------------------------------------------------------------
 
@@ -216,24 +360,17 @@ login_manager.session_protection = 'strong'
 # then fetches the corresponding user from the database.
 
 
-# ROUTES -----------------------------------------------------------------------
-
-########### CONTROLLER ###############
-
-# Lasse: Jeg tænker jeg på, om den logik vi bruger i vores view (templates) med Jinja, også overlapper lidt med 
-# Controller-ansvar. Måske ikke?
-
 @login_manager.user_loader
 def load_user_from_id(id):
     return User.get_by_id(id)
 
 # Flask Principal identity_loaded signal handler. Called when identity_loaded signal has been called.
-@identity_loaded.connect_via(app)
+@identity_loaded.connect_via(app) # DEBUG: Denne manglede.
 def on_identity_loaded(sender, identity):
-  #Set the identity user object
+    #Set the identity user object
     identity.user = current_user
 
-  # Add the UserNeed to the identity (Note. Needs should be understood as Access-Control priviledges)
+    # Add the UserNeed to the identity (Note. Needs should be understood as Access-Control priviledges)
     if hasattr(current_user, 'id'):
         identity.provides.add(UserNeed(current_user.id))
     
@@ -241,11 +378,7 @@ def on_identity_loaded(sender, identity):
     if hasattr(current_user, 'role'):
         identity.provides.add(RoleNeed(current_user.role))
 
-    # if User isinstance of Seeker, så lav identity.provides.add(RoleNeed("seeker"")). Ellers så det andet.
-    if isinstance(current_user, Seeker):
-       identity.provides.add(RoleNeed("seeker"))
-    elif isinstance(current_user, Provider):
-       identity.provides.add(RoleNeed("provider"))
+#-------------------------- ROUTES -----------------------------------------------------------------------
 
 @app.route("/", methods=('GET','POST'))
 def login():
@@ -253,26 +386,17 @@ def login():
     Main page:
     - If the user is already authenticated, redirects to the personal page.
     - If not, displays the login form and processes login attempts.
-    - On successful login, redirects to the proper page (e.g. salesman).
+    - On successful login, redirects to the proper page (e.g. seeker).
     - On failed login, flashes an error message and redisplays the login form.
     """
     if current_user.is_authenticated:
-        flash('You are already logged in.','info')
-
-        if isinstance(current_user, Seeker):
-            return redirect(url_for('seeker'))
-        elif isinstance(current_user, Provider):
-            return redirect(url_for('provider'))
-        
+          flash('You are already logged in.','info')
+          role = User.get_by_id(current_user.get_id()).role   
+          return redirect(url_for(role))
     else:
         form = LoginForm(request.form)
         if request.method == 'POST' and form.validate():
-            user # Instantiér og sæt i IF-clauses.
-            if form.type.data == "Seeker":
-                user = Seeker.get_by_email(form.email.data.strip())
-            elif form.type.data == "Provider":
-                user = Provider.get_by_email(form.email.data.strip())
-
+            user = User.get_by_email(form.email.data.strip())
             if user and user.check_password(form.password.data.strip()):
                 # If the user credentials are correct, start an authenticated session
                 login_user(user, form.remember.data)
@@ -281,60 +405,34 @@ def login():
                 identity_changed.send(current_app._get_current_object(), identity=Identity(user.id))
 
                 # Redirect to proper role.
-                if isinstance(user, Seeker):
-                   redirect(url_for('seeker'))
-                elif isinstance(user, Provider):
-                   redirect(url_for('provider'))
+                return redirect(url_for(user.role))
             else:
                 # Otherwise, display an error message and display the login form again
                 flash("Invalid credentials","error")
         return render_template('login.html', form=form)
-    
+
 @app.route("/register", methods=('GET','POST'))
-def register():  
-  return render_template('register.html', error="Invalid input")
+def register():
+  if current_user.is_authenticated:
+    flash('You are already logged in.','info')
+    role = User.get_by_id(current_user.get_id()).role
+    return redirect(url_for(role))
+  else:
+    form = RegistrationForm(request.form)
 
-@app.route("/register/seeker", methods=('GET','POST'))
-def registerseeker():
-  form = RegistrationFormSeeker(request.form)
+    if request.method == 'POST' and form.validate():
+      User.create_user(
+                      role = form.role.data,
+                      name = form.name.data,
+                      email = form.email.data,
+                      password = form.password.data,
+                      )
+      flash("User created.","success")
 
-  if request.method == 'POST' and form.validate():
-    Seeker.create_user(
-                    name = form.name.data,
-                    email = form.email.data,
-                    password = form.password.data,
-                    birthdate = form.birthdate.data,
-                    gender = form.gender.data,
-                    occupation = form.occupation.data,
-                    image = form.image.data,
-                    description = form.description.data
-                    )
-    flash("User created.","success")
-
-    return redirect(url_for('seeker'))    
-  
-  return render_template('registerseeker.html', form=form, error="Invalid input")
-
-@app.route("/register/provider", methods=('GET','POST'))
-def registerprovider():
-  form = RegistrationFormProvider(request.form)
-
-  if request.method == 'POST' and form.validate():
-    Provider.create_user(
-                    name = form.name.data,
-                    email = form.email.data,
-                    password = form.password.data,
-                    address = form.address.data,
-                    space = form.space.data,
-                    slotsTotal = form.slotsTotal.data,
-                    vacantSlots =form.vacantSlots.data,
-                    description = form.description.data
-                    )
-    flash("User created.","success")
-
-    return redirect(url_for('provider'))    
-  
-  return render_template('registerprovider.html', form=form, error="Invalid input")
+      return redirect(url_for('login'))
+    elif request.method == 'POST':
+      flash("post bracket entered but form not validated.","Debug:")  # Only for debug purposes.
+    return render_template('register.html', form=form, error="Invalid input")
 
 @app.route('/logout', methods=['GET'])
 @login_required
@@ -351,81 +449,137 @@ def logout():
                           identity=AnonymousIdentity())
     return redirect(url_for('login'))
 
+""" LAYOUT OF WEBPAGE:
 
 
+Seekers:
+  GET: /seeker. 
+    - Displays all Collectives by their address (and PrimaryID?). Has a "apply" next to them.
+    - Displays all your Applications (by ApplicationID and CollectiveAddress)
+  GET: /apply/<int:id>: Applies for a specific collective. Displays application form.
+  POST: /apply/<int:id>: Sends application form and redirects to seeker URL.
 
+Providers:
+  GET: /provider. 
+      - Displays all Applications assigned to your collectives (collectives with your ID on).
+      - Displays all your collectives.
+      - Offers you to construct new collective. /newCollective
 
+  GET: /newCollective.
+      - Displays CollectiveForm.
+  POST: /newCollective.
+      - Uploads database and redirects to /provider.
+"""
 
-# --------- Routes for Receipts ----------------------------------------------------------------------
-# Dette er placeholders, skal implementeres.
-
-# Disse skal muligvis bare implementeres som ét view, der så betinget af logik, indeholder forskellige ting.
-# Ellers bliver det meget gentagende? /Lasse
-
-# Jeg synes vi skal tænke over, hvordan vi kan vi få så meget SOLID og OOP med - måske svært med vores framework.
-# Men ellers må vi redegøre for "Code Smell" i rapporten? :) /Lasse
-
-# seeker
-@app.route("/seeker",methods=["GET","POST"])
+# ------------------------- Seeker Routes ---------------------------------
+@app.route("/seeker",methods=["GET","POST"])  #TODO: Fjern POST? Bruges ikke.
 @login_required
+@seeker_permission.require()
 def seeker():
-  form = ReceiptForm(request.form)
-  if request.method == 'POST' and form.validate():
-    text = form.text.data
-    db.session.add(Receipts(text = text))
-    db.session.commit()
-  entries = Receipts.query.order_by(Receipts.id).all()
-  return render_template("seeker.html", entries=entries, form=form)
+    collective_entries = Collective.get_all()
+    your_entries = Collective.get_by_submitter(current_user.id)
+    return render_template("seeker.html", collective_entries=collective_entries, your_entries=your_entries)
 
+
+# Hvis POST, så send en application ind i databasen.
+@app.route("/apply/<int:id>", methods=["GET, POST"])
+@login_required
+@seeker_permission.require()
+def apply(id):
+  """For applying to a collective.
+  """
+  form = ApplicationForm(request.form)
+  if request.method == 'POST' and form.validate():
+      Application.create_application(current_user.id, id, form.data.applicationtext)
+      return redirect(url_for("seeker"))
+  return render_template("apply.html", form=form)
+
+# ------------------------- Provider Routes ---------------------------------
 
 # provider
 @app.route("/provider",methods=["GET","POST"])
 @login_required
-@accountant_permission.require()
-def accountant():
-  form = ReceiptForm(request.form)
-  if request.method == 'POST' and form.validate():
-    text = form.text.data
-    db.session.add(Receipts(text = text))
-    db.session.commit()
-  entries = Receipts.query.order_by(Receipts.id).all()
-  return render_template("accountant.html", entries=entries, form=form)
+@provider_permission.require()
+def provider():
+    collective_entries = Collective.get_by_submitter(current_user.id)
+    # TODO: for entry in collective_entries: concatenate queries. 
+    # Returnerer LIST[Collective]
+    # 
+
+    application_entries = Application.get_by_collective()  ## Alle dem som kan fås udfra ovenstående query.
+    return render_template("provider.html", collective_entries=collective_entries, application_entries=application_entries)
 
 
-
-
-
-
-# manager
-@app.route("/manager",methods=["GET","POST"])
+# Hvis POST, så send en application ind i databasen.
+@app.route("/new_collective", methods=["GET, POST"])
 @login_required
-@manager_permission.require()
-def manager():
-  form = ReceiptForm(request.form)
-  if request.method == 'POST' and form.validate():
-    text = form.text.data
-    db.session.add(Receipts(text = text))
-    db.session.commit()
-  entries = Receipts.query.order_by(Receipts.id).all()
-  return render_template("manager.html", entries=entries, form=form)
-
-### Ved ikke om vi skal beholde lige præcis denne mulighed, men lader den bare være her.
-
-@app.route("/delete/<int:id>")
-def delete(id):
-  """For deleting receipts.
+@provider_permission.require()
+def new_collective():
+  form = CollectiveForm(request.form)
   
-  """
-  entry = Receipts.query.filter_by(id=id).first()
-  if entry:
-    db.session.delete(entry)
-    db.session.commit()
-    flash('Entry deleted.', 'info')
-  else:
-    flash("Sorry, we couldn't find the entry that you wanted to delete.", 'warning')
+  if request.method == 'POST' and form.validate():
+      collective = Collective(
+          submitter_id = current_user.id,
+          address = form.address.data,
+          space = form.space.data,
+          slotsTotal = form.slotsTotal.data,
+          vacantSlots = form.vacantSlots.data,
+          description = form.description.data
+      )
+      db.session.add(collective)
+      db.session.commit()
+      return redirect(url_for("provider"))
+  return render_template("new_collective.html", form=form)
 
-  role = current_user.role
-  return redirect(url_for(role))
+# Only Providers can do this. Security Flaw: Providers can remove another provider's collective.
+@login_required
+@provider_permission.require()
+@app.route("/delete_collective/<int:id>")
+def delete_collective(id):
+  collective = Collective.query.filter_by(id=id).first()
+  if collective:
+      db.session.delete(collective)
+      db.session.commit()
+      msg = collective.name + " has been deleted."
+      flash(msg, 'info')
+  else:
+    flash("Sorry, we couldn't find the collective that you wanted to delete.", 'warning')
+  return redirect(url_for('admin'))
+
+
+# ------------ Routes for both roles ------------------
+
+
+# TODO. Redirect to proper viewfunction depending on current users role. Otherwise functionality is the same.
+# Both seekers and providers can do this now. Security Flaw: Providers can remove another provider's application. Same goes for seekers.
+@login_required
+@app.route("/delete_application/<int:id>")
+def delete_application(id):
+    application = Application.query.filter_by(id=id).first()
+    if application:
+        db.session.delete(application)
+        db.session.commit()
+        msg = application.name + " has been deleted."
+        flash(msg, 'info')
+    else:
+      flash("Sorry, we couldn't find the application that you wanted to delete.", 'warning')
+    return redirect(url_for(current_user.role))
+
+
+
+
+
+
+
+
+
+
+
+
+# Only here for reference:
+"""
+
+
 
 # admin
 @app.route('/admin')
@@ -439,10 +593,10 @@ def admin():
 def delete_user(id):
   user = User.query.filter_by(id=id).first()
   if user:
-       db.session.delete(user)
-       db.session.commit()
-       msg = user.name + " has been deleted."
-       flash(msg, 'info')
+      db.session.delete(user)
+      db.session.commit()
+      msg = user.name + " has been deleted."
+      flash(msg, 'info')
   else:
     flash("Sorry, we couldn't find the user that you wanted to delete.", 'warning')
   return redirect(url_for('admin'))
@@ -473,6 +627,6 @@ def degrade_role(id):
   
   return redirect(url_for('admin'))
 
-
+"""
 
 

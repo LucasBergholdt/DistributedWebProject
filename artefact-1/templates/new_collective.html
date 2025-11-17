@@ -1,25 +1,14 @@
 {% extends 'base.html' %}
 
 {% block body%}
-  <h1>Sign Up for provider</h1>
+<h1>Hello {{ current_user.role }} {{ current_user.name }}!</h1>
 
-  <form method="post">
-    <div>
-    {{ form.name.label }}
-    {{ form.name }}
-    </div>
-    <div>
-    {{ form.email.label }}
-    {{ form.email }}
-    </div>
-    <div>
-    {{ form.password.label }}
-    {{ form.password }}
-    </div>
-    <div>
-    {{ form.confirm.label }}
-    {{ form.confirm }}
-    </div>
+<p>
+    Apply for this collective. If you regret, <a
+    href="{{ url_for('provider')}}">go to homepage</a>.
+</p>
+
+ <form method="post">
     <div>
     {{ form.address.label }}
     {{ form.address }}

@@ -1,0 +1,48 @@
+{% extends 'base.html' %}
+
+{% block body%}
+<h1>Hello {{ current_user.role }} {{ current_user.name }}!</h1>
+<p>
+  If you wish, you can <a
+    href="{{ url_for('logout')}}">log out here</a>.
+</p>
+
+<h2>
+  Here is a list of all applications sent to your collectives</a>.
+</h2>
+  <table>
+    <tr>
+      <th>Application ID</th>
+      <th>Collective ID</th>    <!-- Tilføj evt Collective Address. Gør det nemmere at læse for provider.-->
+      <th>Reject</th>
+    </tr>
+  {% for entry in application_entries %}
+    <tr>
+      <td>{{ entry.id }}</td>
+      <td>{{ entry.collective_id }}</td>
+      <td><a href="/delete_application/{{ entry.id }}">Delete</a></td>
+    </tr>
+  {% endfor %}
+  </table>
+
+<h2>
+  Here is a list of all the collectives that you own.</a>.
+</h2>
+</p>
+<table>
+  <tr>
+    <th>Collective ID</th>
+    <th>Collective Address</th>
+    <th>Remove Collective</th>
+  </tr>
+{% for entry in collective_entries %}
+  <tr>
+    <td>{{ entry.id }}</td>
+    <td>{{ entry.address }}</td>
+    <td><a href="/delete_collective/{{ entry.id }}">Delete</a></td>
+  </tr>
+{% endfor %}
+</table>
+<p>Do you want to create a new collective? <a href="{{ url_for('new_collective')}}">Click here</a></p>
+
+{% endblock body%}

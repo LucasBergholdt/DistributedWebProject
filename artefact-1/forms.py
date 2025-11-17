@@ -10,28 +10,35 @@ def email_exists(form, field):
 
 # WTForms for user registration.
 
-# Abstract Base Form. Not to be used directly.
-class RegistrationBaseForm(Form):
+class RegistrationForm(Form):
+  role = SelectField('Role', 
+                         choices=[('seeker', 'Seeker'), ('Provider', 'provider')], 
+                         validators=[DataRequired()])
   name = StringField('Name', validators=[DataRequired(), Length(min=1, max=80, message='You cannot have less than 1 or more than 80 characters')])
   email = EmailField('Email', validators=[DataRequired(), email_exists, Email()])
   password = PasswordField('Password', validators=[DataRequired(), EqualTo('confirm', message='Password must match')])
   confirm = PasswordField('Confirm', validators=[DataRequired()])
-  submit = SubmitField('Register')
-
-class RegistrationFormSeeker(RegistrationBaseForm):
+  description = StringField('Describe yourself', validators=[DataRequired(), Length(min=1, max=80, message='You cannot have less than 1 or more than 80 characters')])
   birthdate = StringField('Birthdate', validators=[DataRequired(), Length(min=1, max=80, message='You cannot have less than 1 or more than 80 characters')])
   gender = StringField('Gender', validators=[DataRequired(), Length(min=1, max=80, message='You cannot have less than 1 or more than 80 characters')])
   occupation = StringField('Occupation', validators=[DataRequired(), Length(min=1, max=80, message='You cannot have less than 1 or more than 80 characters')])
   image = StringField('Image', validators=[DataRequired(), Length(min=1, max=80, message='You cannot have less than 1 or more than 80 characters')])
-  description = StringField('Describe yourself', validators=[DataRequired(), Length(min=1, max=80, message='You cannot have less than 1 or more than 80 characters')])
+  submit = SubmitField('Register')
 
-
-class RegistrationFormProvider(RegistrationBaseForm):
+class CollectiveForm(Form):
   address = StringField('Name', validators=[DataRequired(), Length(min=1, max=80, message='You cannot have less than 1 or more than 80 characters')])
   space = StringField('How much space is there', validators=[DataRequired(), Length(min=1, max=80, message='You cannot have less than 1 or more than 80 characters')])
   slotsTotal = StringField('Name', validators=[DataRequired(), Length(min=1, max=80, message='You cannot have less than 1 or more than 80 characters')])
   vacantSlots = StringField('Name', validators=[DataRequired(), Length(min=1, max=80, message='You cannot have less than 1 or more than 80 characters')])
   description = StringField('Describe your collective', validators=[DataRequired(), Length(min=1, max=80, message='You cannot have less than 1 or more than 80 characters')])
+  submit = SubmitField('Register')
+
+
+
+class ApplicationForm(Form):
+  applicationtext = StringField('Name', validators=[DataRequired(), Length(min=1, max=80, message='You cannot have less than 1 or more than 80 characters')])
+  submit = SubmitField('Register')
+
 
 # WARNING --------------------------------------------------------------------
 # Checking if an email is already registered during form validation introduces 
@@ -52,19 +59,3 @@ class LoginForm(Form):
   password = PasswordField('Password', validators=[DataRequired()])
   remember = BooleanField('Remember Me')
   submit = SubmitField('Login')
-
-
-# Forms for adding receipts. Placeholder
-class ReceiptForm(Form):
-  """Form for entering data in receipts. Placeholder.
-  """
-  amount = DecimalField('Amount', validators=[DataRequired()])
-  time_of_purchase = DateTimeField('Time of purchase', validators=[DataRequired()], format=['%Y-%m-%d %H:%M', '%Y-%m-%d %H:%M:%S'])
-  bank_statement = StringField('Bank statement', validators=[DataRequired(), Length(min=1, max=100, message="You cannot have less than 1 or more than 100 characters")])
-  file = FileField('Image of receipt', validators=[InputRequired()])
-  submit = SubmitField('Create Receipt')
-
-
-class StatusChangeForm(Form):
-  new_status = SelectField("Status", choices=[], validators=[DataRequired()])
-  submit = SubmitField('Change Status')

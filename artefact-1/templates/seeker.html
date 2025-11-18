@@ -31,13 +31,15 @@
 </p>
 <table>
   <tr>
-    <th>Collective ID</th>
+    <th>Application ID</th>
     <th>Collective Address</th>
+    <th>Description</th>
   </tr>
-{% for entry in your_entries %}
+{% for entry in your_applications %}
   <tr>
     <td>{{ entry.id }}</td>
-    <td>{{ entry.address }}</td>
+    <td>{{ entry.collective.address }}</td>
+    <td>{{ entry.description }}</td>
   </tr>
 {% endfor %}
 </table>

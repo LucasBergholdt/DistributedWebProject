@@ -8,32 +8,34 @@
 </p>
 
 <h2>
-  Here is a list of all applications sent to your collectives</a>.
+  Here is a list of all applications sent to your collectives.
 </h2>
   <table>
     <tr>
       <th>Application ID</th>
       <th>Collective ID</th>    <!-- Tilføj evt Collective Address. Gør det nemmere at læse for provider.-->
+      <th>Description</th>
       <th>Reject</th>
     </tr>
   {% for entry in application_entries %}
     <tr>
       <td>{{ entry.id }}</td>
       <td>{{ entry.collective_id }}</td>
+      <td>{{ entry.description }}</td>
       <td><a href="/delete_application/{{ entry.id }}">Delete</a></td>
     </tr>
   {% endfor %}
   </table>
 
 <h2>
-  Here is a list of all the collectives that you own.</a>.
+  Here is a list of all the collectives that you own.
 </h2>
 </p>
 <table>
   <tr>
     <th>Collective ID</th>
     <th>Collective Address</th>
-    <th>Remove Collective</th>
+    <th>Remove</th>
   </tr>
 {% for entry in collective_entries %}
   <tr>

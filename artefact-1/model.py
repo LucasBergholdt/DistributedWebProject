@@ -1,3 +1,6 @@
+
+
+# ----------------- NOT USED. ONLY HERE FOR REFERENCE. --------------------------------
 from flask_login import UserMixin
 from . import db, bcrypt
 

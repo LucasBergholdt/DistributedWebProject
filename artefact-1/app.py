@@ -73,6 +73,12 @@ class User(UserMixin, db.Model):
 
     image = db.Column(db.String(500), nullable=True)
 
+    # One-Many relationship between User and Application
+    applications = db.relationship("Application", back_populates="user")
+
+    # One-Many relationship between User and Collective
+    collectives = db.relationship("Collective", back_populates="user")
+
     def check_password(self, password):
         """
         Check if the provided password matches the stored hash.
@@ -85,8 +91,8 @@ class User(UserMixin, db.Model):
         """
         return bcrypt.check_password_hash(self.password, password)
 
-    # TODO: Skal description+birthdate etc også angives ved User Registration? Tag beslutning om dette.
-    @classmethod  #Class Method: Static Method men som tager imod selve classen som første argument. Tillader os her at constructe en class user og returne den.
+    #TODO: Mange felter bliver efterladt null. Lav evt ny side/viewfunction hvor user kan udfylde sine informationer.
+    @classmethod
     def create_user(cls, role, name, email, password):
       """
       Create a new user with the provided details.
@@ -120,7 +126,7 @@ class User(UserMixin, db.Model):
       
       """
 
-    @staticmethod #Static Method. Modtager ikke et implicit first argument.
+    @staticmethod
     def get_by_id(id):
       """
       Retrieve a user by their ID.
@@ -175,10 +181,11 @@ class Collective(db.Model):
     slotsTotal = db.Column(db.Integer())
 
     vacantSlots = db.Column(db.Integer())
-
-    # images?
-
-    # TODO: Skal nok være statitc methods eller have self som første parameter? Kan egentlig godt lide Application.get_all() f.eks. -> mere deskriptivt.
+  
+    # Many-One relationship between Collective and User
+    user = db.relationship("User", back_populates="collectives")
+    # One-Many relationship between Collective and Application
+    applications = db.relationship("Application", back_populates="collective")
 
     @staticmethod
     def get_all():
@@ -190,7 +197,7 @@ class Collective(db.Model):
         """Get all Collectives submitted by a specific user"""
         return Collective.query.filter_by(submitter_id=user_id).all()
     
-
+    @classmethod
     def create_collective(cls, submitter_id, address, space, slotsTotal, vacantSlots, description):
       """
       Create a new collective with the provided details.
@@ -207,11 +214,10 @@ class Collective(db.Model):
       collective = cls(
           submitter_id = submitter_id,
           address = address.strip(),
-          space = space.strip(),
-          slotsTotal = slotsTotal.strip(),
-          vacantSlots = vacantSlots.strip(),
+          space = space,
+          slotsTotal = slotsTotal,
+          vacantSlots = vacantSlots,
           description = description.strip()
-          # evt også image.
       )
                   
       db.session.add(collective)
@@ -227,10 +233,15 @@ class Application(db.Model):
     submitter_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False)
     collective_id = db.Column(db.Integer, db.ForeignKey('collectives.id'), nullable=False)
 
-    time_of_submission = db.Column(db.DateTime, nullable=False)
-    applicationtext = db.Column(db.String(500))
+    time_of_submission = db.Column(db.DateTime, nullable=True)  #TODO: Lav automatisk.
+    description = db.Column(db.String(500))
 
-    # TODO: Skal nok være statitc methods eller have self som første parameter? Kan egentlig godt lide Application.get_all() f.eks. -> mere deskriptivt.
+    # Many-One relationship between Application and User
+    user = db.relationship("User", back_populates="applications")
+
+    # Many-One relationship between Application and Collective
+    collective = db.relationship("Collective", back_populates="applications")
+
     @staticmethod
     def get_all():
         """Get all Applications"""
@@ -247,7 +258,7 @@ class Application(db.Model):
         return Application.query.filter_by(collective_id=collective_id).all()
     
     @classmethod  #Class Method: Static Method men som tager imod selve classen som første argument. Tillader os her at constructe en class user og returne den.
-    def create_application(cls, submitter_id, collective_id, applicationtext):
+    def create_application(cls, submitter_id, collective_id,description):
       """
       Create a new application with the provided details.
 
@@ -263,8 +274,7 @@ class Application(db.Model):
       application = cls(
           submitter_id        = submitter_id,
           collective_id       = collective_id,
-          applicationtext     = applicationtext.strip(),
-          # evt også image.
+          description     =description.strip(),
       )
                   
       db.session.add(application)
@@ -272,10 +282,29 @@ class Application(db.Model):
       return application
     
 
+# Debug Purposes
+def create_default_userbase():
+  existing_seeker = User.query.filter_by(role="seeker").first()
+  if not existing_seeker:
+     User.create_user("seeker", "Bob", "seeker@gmail.com", "123")
+  existing_provider = User.query.filter_by(role="provider").first()
+  if not existing_provider:
+     User.create_user("provider", "Alice", "provider@gmail.com", "123")
+
+# Debug Purposes
+def create_default_collectives_applications():
+  Collective.create_collective(2, "Skovbogade", 50, 5, 2, "Et dejligt kollektiv i Odense By") #submitterID = 2. provider@gmail.com.
+  Application.create_application(1, 1, "Jeg hedder Alice og vil gerne søge ind på kollektivet på Skovbogade.")
+
 # Clears the database and create tables within the application context
 with app.app_context():
   db.drop_all()
   db.create_all()
+  create_default_userbase()
+  create_default_collectives_applications()
+
+
+
 
 # -------------------------------- FORMS ------------------------------------- #
 # Custom validator to check if an email already exists
@@ -311,14 +340,14 @@ for opdatering af profil:
 
 class CollectiveForm(Form):
   address = StringField('Address of collective', validators=[DataRequired(), Length(min=1, max=80, message='You cannot have less than 1 or more than 80 characters')])
-  space = IntegerField('Amount of space (square meters)', validators=[DataRequired(), Length(min=1, max=80, message='You cannot have less than 1 or more than 80 characters')])
-  slotsTotal = IntegerField('Amount of residents that the collective can hold', validators=[DataRequired(), Length(min=1, max=80, message='You cannot have less than 1 or more than 80 characters')])
-  vacantSlots = IntegerField('Amount of available slots in the collective', validators=[DataRequired(), Length(min=1, max=80, message='You cannot have less than 1 or more than 80 characters')])
+  space = IntegerField('Amount of space (square meters)', validators=[DataRequired()])
+  slotsTotal = IntegerField('Amount of residents that the collective can hold', validators=[DataRequired()])
+  vacantSlots = IntegerField('Amount of available slots in the collective', validators=[DataRequired()])
   description = StringField('Description of the collective', validators=[DataRequired(), Length(min=1, max=80, message='You cannot have less than 1 or more than 80 characters')])
   submit = SubmitField('Register your collective')
 
 class ApplicationForm(Form):
-  applicationtext = StringField('Your application', validators=[DataRequired(), Length(min=1, max=80, message='You cannot have less than 1 or more than 80 characters')])
+  description = StringField('Your application', validators=[DataRequired(), Length(min=1, max=80, message='You cannot have less than 1 or more than 80 characters')])
   submit = SubmitField('Apply for this collective')
 
 
@@ -477,12 +506,12 @@ Providers:
 @seeker_permission.require()
 def seeker():
     collective_entries = Collective.get_all()
-    your_entries = Collective.get_by_submitter(current_user.id)
-    return render_template("seeker.html", collective_entries=collective_entries, your_entries=your_entries)
+    your_applications = current_user.applications
+    #Collective.get_by_submitter(current_user.id)
+    return render_template("seeker.html", collective_entries=collective_entries, your_applications=your_applications)
 
 
-# Hvis POST, så send en application ind i databasen.
-@app.route("/apply/<int:id>", methods=["GET, POST"])
+@app.route("/apply/<int:id>", methods=["GET", "POST"])
 @login_required
 @seeker_permission.require()
 def apply(id):
@@ -490,44 +519,41 @@ def apply(id):
   """
   form = ApplicationForm(request.form)
   if request.method == 'POST' and form.validate():
-      Application.create_application(current_user.id, id, form.data.applicationtext)
+      Application.create_application(current_user.id, id, form.description.data)
       return redirect(url_for("seeker"))
   return render_template("apply.html", form=form)
 
 # ------------------------- Provider Routes ---------------------------------
-
-# provider
 @app.route("/provider",methods=["GET","POST"])
 @login_required
 @provider_permission.require()
 def provider():
+    # Get all collectives that Provider owns. Done directly by accessing foreign keys.
+    # evt. anvend user.collectives (vha. db.relationship())
     collective_entries = Collective.get_by_submitter(current_user.id)
-    # TODO: for entry in collective_entries: concatenate queries. 
-    # Returnerer LIST[Collective]
-    # 
 
-    application_entries = Application.get_by_collective()  ## Alle dem som kan fås udfra ovenstående query.
+    # Get all applications mapped to these collectives.
+    application_entries = [
+      application
+      for collective in collective_entries
+        for application in collective.applications  #relationship() anvendes.
+    ]
     return render_template("provider.html", collective_entries=collective_entries, application_entries=application_entries)
 
-
-# Hvis POST, så send en application ind i databasen.
-@app.route("/new_collective", methods=["GET, POST"])
+@app.route("/new_collective", methods=["GET", "POST"])
 @login_required
 @provider_permission.require()
 def new_collective():
   form = CollectiveForm(request.form)
   
   if request.method == 'POST' and form.validate():
-      collective = Collective(
-          submitter_id = current_user.id,
-          address = form.address.data,
-          space = form.space.data,
-          slotsTotal = form.slotsTotal.data,
-          vacantSlots = form.vacantSlots.data,
-          description = form.description.data
-      )
-      db.session.add(collective)
-      db.session.commit()
+      Collective.create_collective(
+          current_user.id, 
+          form.address.data,
+          form.space.data,
+          form.slotsTotal.data,
+          form.vacantSlots.data,
+          form.description.data)
       return redirect(url_for("provider"))
   return render_template("new_collective.html", form=form)
 
@@ -538,19 +564,21 @@ def new_collective():
 def delete_collective(id):
   collective = Collective.query.filter_by(id=id).first()
   if collective:
+      # Delete all applications directed to this collective and the collective itself.
+      for app in collective.applications:
+        db.session.delete(app)
       db.session.delete(collective)
       db.session.commit()
-      msg = collective.name + " has been deleted."
+      msg = collective.address + " and all corresponding applications has been deleted."
       flash(msg, 'info')
+
   else:
     flash("Sorry, we couldn't find the collective that you wanted to delete.", 'warning')
-  return redirect(url_for('admin'))
+  return redirect(url_for('provider'))
 
 
 # ------------ Routes for both roles ------------------
 
-
-# TODO. Redirect to proper viewfunction depending on current users role. Otherwise functionality is the same.
 # Both seekers and providers can do this now. Security Flaw: Providers can remove another provider's application. Same goes for seekers.
 @login_required
 @app.route("/delete_application/<int:id>")
@@ -559,74 +587,7 @@ def delete_application(id):
     if application:
         db.session.delete(application)
         db.session.commit()
-        msg = application.name + " has been deleted."
-        flash(msg, 'info')
+        flash("Application has been deleted.", 'info')
     else:
       flash("Sorry, we couldn't find the application that you wanted to delete.", 'warning')
     return redirect(url_for(current_user.role))
-
-
-
-
-
-
-
-
-
-
-
-
-# Only here for reference:
-"""
-
-
-
-# admin
-@app.route('/admin')
-@admin_permission.require()
-def admin():
-    users = User.query.order_by(User.id).all()
-    return render_template('admin.html', users=users)
-
-##### Routes for Admin capabilities ######
-@app.route("/delete_user/<int:id>")
-def delete_user(id):
-  user = User.query.filter_by(id=id).first()
-  if user:
-      db.session.delete(user)
-      db.session.commit()
-      msg = user.name + " has been deleted."
-      flash(msg, 'info')
-  else:
-    flash("Sorry, we couldn't find the user that you wanted to delete.", 'warning')
-  return redirect(url_for('admin'))
-
-@app.route("/upgrade_role/<int:id>")
-def upgrade_role(id):
-  user = User.query.filter_by(id=id).first()
-  if user:
-    user.role = 'manager'
-    db.session.commit()
-    msg = user.name + " has been changed to Manager"
-    flash(msg, 'info')
-  else:
-    flash("Sorry, we couldn't find the user that you wanted to upgrade to admin.", 'warning')
-  
-  return redirect(url_for('admin'))
-
-@app.route("/degrade_role/<int:id>")
-def degrade_role(id):
-  user = User.query.filter_by(id=id).first()
-  if user:
-      user.role = 'salesman'
-      db.session.commit()
-      msg = user.name + " has been changed to Salesman"
-      flash(msg, 'info')
-  else:
-    flash("Sorry, we couldn't find the admin that you wanted to degrade to user.", 'warning')
-  
-  return redirect(url_for('admin'))
-
-"""
-
-

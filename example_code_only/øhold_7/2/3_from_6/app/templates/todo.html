@@ -1,0 +1,32 @@
+{% extends 'base.html' %}
+
+{% block body%}
+<h1>Hello {{ current_user.name }}!</h1>
+
+<p>
+  Welcome to your personal area. Here is your todo list. You can <a
+    href="{{ url_for('logout')}}">log out here</a>.
+</p>
+
+  <table>
+    <tr>
+      <th>ID</th>
+      <th>Description</th>
+      <th>Done</th>
+    </tr>
+  {% for entry in entries %}
+    <tr>
+      <td>{{ entry.id }}</td>
+      <td>{{ entry.text }}</td>
+      <td><a href="/delete/{{ entry.id }}">Delete</a></td>
+    </tr>
+  {% endfor %}
+  </table>
+  <form method="post">
+    {{ form.text.label }}
+    {{ form.text }}
+    {{ form.submit }}
+  </form>
+
+
+{% endblock body%}

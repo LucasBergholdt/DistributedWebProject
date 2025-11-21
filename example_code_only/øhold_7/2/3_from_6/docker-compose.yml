@@ -1,0 +1,79 @@
+version: "3.9"
+
+# The `services` key defines the containers that Docker Compose will manage.
+services:
+  # The "web" service represents your Flask web application container.
+  web:
+    # Builds the Docker image for this service using the Dockerfile in the current directory (`.`).
+    build: .
+
+    # Maps port 5000 on the host machine to port 5000 in the container.
+    # This allows you to access the application running in the container via localhost:5000.
+    ports:
+      - "5000:5000"
+
+    # Sets environment variables for the container.
+    # Here, it configures the database connection URL for your application.
+    # Sensitive data should be handled via a `.env` file.
+    environment:
+      - DATABASE_URL=postgresql://postgres:postgres@db:5432/postgres
+
+    # FLask might fail too many attempts to connect to the database and 
+    # shutdown if this service comes online before the database is up and 
+    # running. The `depends_on` key specifies the services that must be started 
+    # before this one. The additional `condition: service_healthy` ensures that 
+    # service is  started  only then dependency is fully online and healthy. 
+    # The definition  of "healthy" is left to the dependency. Unless you 
+    # require finer control,  this approach provides some encapsulation and 
+    # modularity.
+    depends_on:
+      db:
+        condition: service_healthy
+    # By default, if the entrypoint of the container fails or terminates, the 
+    # container is shutdown. The next line changes this behaviour to 
+    # automatically restarting the service unless it is explicitly stopped 
+    # (e.g., if the stack is being shutdown). This can provide an alternative 
+    # solution to the dependency on the database service: if Flask fails to 
+    # connect because postgreasql is not ready yet, the service will fail and 
+    # be restarted. However, this is not recommended. First, depends_on makes 
+    # this intent clear. Second, your service might fail for other reasons and 
+    # the automatic restart might hinder diagnosis and debug, especially for 
+    # beginners.
+    # restart: unless-stopped
+
+  # The "db" service represents your PostgreSQL database container.
+  db:
+    # Uses the official PostgreSQL image from Docker Hub.
+    # Best practice: Pin to a specific version by using tags for 
+    # reproducibility.
+    image: postgres:17
+
+    # Sets environment variables for the PostgreSQL container.
+    # These variables configure the default user, password, and database name.
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: postgres
+
+    # Mounts a named volume (`pgdata`) to the container's data directory.
+    # This ensures that database data persists even if the container is restarted or recreated.
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    # Health check to ensure the database is ready.
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 5s
+      timeout: 5s
+      retries: 5    
+    # Note: Uncomment this line in production to ensure the service restarts
+    # automatically if it crashes. In development, leaving it commented out
+    # makes debugging easier.
+    # restart: unless-stopped
+
+# Defines named volumes used by the services.
+# Volumes are used to persist data outside the container's lifecycle.
+volumes:
+  # The `pgdata` volume is used to store PostgreSQL data.
+  # The `driver: local` specifies that the volume is stored locally on the host machine.
+  pgdata:
+    driver: local

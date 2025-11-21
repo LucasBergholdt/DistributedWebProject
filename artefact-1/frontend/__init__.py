@@ -64,6 +64,7 @@ class LoginForm(Form):
 
 
 # ------------------------------------------- ROUTES ------------------------------------------------------
+
 @app.route("/", methods=('GET','POST'))
 def login():
     """
@@ -146,7 +147,7 @@ def seeker():
     collective_entries = requests.get(f"{LOGIC_API}/collectives") # ALL collectives.
 
     
-    your_applications = requests.get(f"{LOGIC_API}/applications") # Fetches applications with your userID. TODO: Lav en parameter.
+    your_applications = requests.get(f"{LOGIC_API}/users/") # Fetches applications with your userID. TODO: Lav en parameter.
     #your_applications = current_user.applications #LOGIC
     #Collective.get_by_submitter(current_user.id)
     return render_template("seeker.html", collective_entries=collective_entries, your_applications=your_applications)

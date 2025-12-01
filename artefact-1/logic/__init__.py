@@ -6,8 +6,6 @@ from flask_bcrypt import Bcrypt
 from flask_principal import Principal, Permission, RoleNeed, UserNeed, Identity, AnonymousIdentity, identity_changed, identity_loaded
 import os
 
-
-
 app = Flask(__name__)
 
 # configure SQL Alchemy ORM, 
@@ -112,15 +110,6 @@ class User(UserMixin, db.Model):
       db.session.add(user)
       db.session.commit()
       return user
-
-      """ Brug til senere
-                        description = description.strip(),
-                  birthdate = birthdate.strip(),
-                  gender = gender.strip(),
-                  occupation = occupation.strip()
-      
-      
-      """
 
     @staticmethod
     def get_by_id(id):
@@ -301,7 +290,7 @@ with app.app_context():
 
 
 
-# SESSIONS --------------------------------------------------------------------
+# -------------------------------------------- SESSIONS --------------------------------------------------------------------
 
 # Initialize the LoginManager with the Flask application
 login_manager = LoginManager(app)
@@ -337,23 +326,8 @@ def on_identity_loaded(sender, identity):
         identity.provides.add(RoleNeed(current_user.role))
 
 
-# Routes ----------------------------------------------------------------------
-# LOGIC skal bruge USER_id.
+# ------------------------------------------ ROUTES ----------------------------------------------------------------------
 
-"""
-LOGIC:
-@app.route("/applications/<int:id>")
-  methods: DELETE, POST, GET
-  skal også understøtte en parameter.
-
-
-
-
-@app.route("/collectives/<int:id>")
-  methods: DELETE, POST, GET
-
-
-"""
 # Fetches all applications. TODO: Support a parameter to fetch only list of applications.
     # - List of Seeker's Applications
     # - List of Provider's Applications
@@ -393,7 +367,6 @@ def get_applications(id):
     db.session.delete(application)
     db.session.commit()
     return jsonify({"message": "Deleted"}), 200
-
 
 # Fetches all collectives. TODO: Support a parameter to fetch only list of collectives.
     # - List of Seeker's Collectives (that he applied for)
@@ -443,44 +416,37 @@ def get_collectives(id):
     for e in applications])  # Liste af json objekter.
 
 
-
-
-
-
-
-
-
-# ------------ Users --------------------
-@app.route("/applications", methods=["GET"])
-def get_applications():
-    applications = Application.get_all()
+# ------------ Users. Lav /users med methods GET, POST, DELETE. --------------------
+@app.route("/users", methods=["GET"])
+def get_users():
+    users = User.get_all()
     return jsonify([{
        "id": e.id, 
        "submitter_id": e.submitter_id, 
        "collective_id": e.collective_id,
        "time_of_submission": e.time_of_submission,
        "description": e.description}
-    for e in applications])  # Liste af json objekter.
+    for e in users])  # Liste af json objekter.
 
 
 
-@app.route("/applications", methods=["POST"])
-def get_applications():
+@app.route("/users", methods=["POST"])
+def get_users():
     data = request.get_json()
     text = data.get('text')
     if not text:
         return jsonify({"error": "Text is required"}), 400
-    application = Application(text=text)
-    db.session.add(application)
+    user = User(text=text)
+    db.session.add(User)
     db.session.commit()
-    return jsonify({"id": application.id, "text": application.text}), 201
+    return jsonify({"id": user.id, "text": user.text}), 201
 
 
-@app.route("/applications/<int:id>", methods=["DELETE"])
-def get_applications(id):
-    application = Application.query.get(id)
-    if not application:
+@app.route("/users/<int:id>", methods=["DELETE"])
+def get_users(id):
+    user = User.query.get(id)
+    if not user:
         return jsonify({"error": "Not found"}), 404
-    db.session.delete(application)
+    db.session.delete(user)
     db.session.commit()
     return jsonify({"message": "Deleted"}), 200

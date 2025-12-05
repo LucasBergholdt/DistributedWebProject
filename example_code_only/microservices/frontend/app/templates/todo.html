@@ -1,0 +1,35 @@
+{% extends 'base.html' %}
+
+{% block body%}
+<!-- <h1>Hello current_user commented out!</h1> -->
+<!--- Session not implemented -->
+
+<p>
+  Welcome to your personal area. Here is your todo list.
+  <form action="{{ url_for('logout_view') }}" method="POST" style="display:inline;">
+    <button type="submit">log out here</button>
+</form>
+</p>
+
+  <table>
+    <tr>
+      <th>ID</th>
+      <th>Description</th>
+      <th>Done</th>
+    </tr>
+  {% for entry in entries %}
+    <tr>
+      <td>{{ entry.id }}</td>
+      <td>{{ entry.text }}</td>
+      <td><a href="/delete/{{ entry.id }}">Delete</a></td>
+    </tr>
+  {% endfor %}
+  </table>
+  <form method="post">
+    {{ form.text.label }}
+    {{ form.text }}
+    {{ form.submit }}
+  </form>
+
+
+{% endblock body%}

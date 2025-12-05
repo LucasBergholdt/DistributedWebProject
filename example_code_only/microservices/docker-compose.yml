@@ -1,0 +1,52 @@
+version: "3.9"
+
+services:
+  frontend:
+    build: ./frontend
+    ports:
+      - "4999-5000:5000" # Denne skal ændres afhængigt af antal replicas man ønsker. (dette er 2)
+    environment: 
+      - AUTH_API_URL=http://auth:5000 # Container to container communication
+      - TODO_API_URL=http://todos:5000
+    depends_on:
+      - auth
+      - todos
+  auth:
+    build: ./auth
+    ports:
+      - "5001:5000" # tilgå logic på 5001 porten
+    environment:
+      - DATABASE_URL=postgresql://postgres:postgres@db:5432/postgres
+    depends_on:
+      - db
+  
+  todos:
+    build: ./todos
+    ports:
+      - "5002:5000"  # Expose todo service
+    environment:
+      - DATABASE_URL=postgresql://postgres:postgres@db:5432/postgres
+    # volumes: # Hjælper med at køre i debug mode. 
+    #   - ./todos/:/app
+      # God idé at fjerne, når et projekt afleveres. 
+    depends_on:
+      - db
+
+  db:
+    image: postgres:17
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: postgres
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+volumes:
+  pgdata:
+    driver: local

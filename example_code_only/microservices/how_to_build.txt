@@ -1,0 +1,1 @@
+sudo docker-compose up --build --scale frontend=2

@@ -1,50 +1,28 @@
 {% extends 'base.html' %}
 
 {% block body%}
-<h1>Hello {{ current_user.role }} {{ current_user.name }}!</h1>
-<p>
-  If you wish, you can <a
-    href="{{ url_for('logout')}}">log out here</a>.
-</p>
 
-<h2>
-  Here is a list of all applications sent to your collectives.
-</h2>
-  <table>
-    <tr>
-      <th>Application ID</th>
-      <th>Collective ID</th>    <!-- Tilføj evt Collective Address. Gør det nemmere at læse for provider.-->
-      <th>Description</th>
-      <th>Reject</th>
-    </tr>
-  {% for entry in application_entries %}
-    <tr>
-      <td>{{ entry.id }}</td>
-      <td>{{ entry.collective_id }}</td>
-      <td>{{ entry.description }}</td>
-      <td><a href="/delete_application/{{ entry.id }}">Delete</a></td>
-    </tr>
-  {% endfor %}
-  </table>
-
-<h2>
-  Here is a list of all the collectives that you own.
-</h2>
-</p>
-<table>
-  <tr>
-    <th>Collective ID</th>
-    <th>Collective Address</th>
-    <th>Remove</th>
-  </tr>
-{% for entry in collective_entries %}
-  <tr>
-    <td>{{ entry.id }}</td>
-    <td>{{ entry.address }}</td>
-    <td><a href="/delete_collective/{{ entry.id }}">Delete</a></td>
-  </tr>
-{% endfor %}
-</table>
-<p>Do you want to create a new collective? <a href="{{ url_for('new_collective')}}">Click here</a></p>
+<div class="container-fluid">
+    <h2 class="my-4 mx-4">
+      Collectives that you have submitted
+    </h2>
+    {% if not collective_entries %}
+    <div class="container-fluid">
+        You haven't submitted any collectives. Submit a new collective <a href="{{ url_for('new_collective') }}">here</a>
+    </div>
+    {% else %}
+    <div class="d-flex align-items-start flex-wrap p-3 bg-light">  <!-- TODO: align-items eller align-contents?-->
+        {% for entry in collective_entries %}
+        <!-- div of one collective-->
+        <div class="container-s p-3 m-2 border"> 
+            <div class="container-fluid">{{ entry.image }}</div>
+            <p class="mb-1">Room is {{ entry.roomsize }} square meters.</p>
+            <p class="mb-1">{{ entry.city }}, {{ entry.street }}</p>
+            <p class="mb-0">{{ entry.price }} DKK</p>
+        </div>    
+        {% endfor %}
+    </div>
+    {% endif %}
+</div>
 
 {% endblock body%}

@@ -8,8 +8,6 @@ from flask_principal import Principal, Permission, RoleNeed, UserNeed, Identity,
 from wtforms import IntegerField, DateTimeField, DecimalField, FileField, Form, SubmitField, SelectField, StringField, EmailField, PasswordField, BooleanField, ValidationError
 from wtforms.validators import DataRequired, Length, Email, EqualTo, InputRequired
 
-
-
 app = Flask("Flask Session")
 
 # Configure SQLAlchemy ORM to use SQLite database file 'flask.db'
@@ -58,26 +56,17 @@ class User(UserMixin, db.Model):
     # User's password, stored as a hash
     password   = db.Column(db.String(80))
     # User's name, not used for identification (just an example of an extra field)
-    name = db.Column(db.String(80), nullable=False)
+    # name = db.Column(db.String(80), nullable=False)
     # User's role, used for role-based access control. "seeker", "provider"
     role = db.Column(db.String(80), nullable=False)
-
-    # Attributes of user. Mostly relevant for a Seeker. These fields can be left NULL for a Provider.
-    description = db.Column(db.String(500), nullable=True)
-
-    birthdate = db.Column(db.String(80), nullable=True)
-
-    gender = db.Column(db.String(80), nullable=True)
-
-    occupation = db.Column(db.String(80), nullable=True)
-
-    image = db.Column(db.String(500), nullable=True)
 
     # One-Many relationship between User and Application
     applications = db.relationship("Application", back_populates="user")
 
     # One-Many relationship between User and Collective
     collectives = db.relationship("Collective", back_populates="user")
+
+    #seekerprofile = db.relationship("Seekerprofile", back_populates="user")
 
     def check_password(self, password):
         """
@@ -93,7 +82,7 @@ class User(UserMixin, db.Model):
 
     #TODO: Mange felter bliver efterladt null. Lav evt ny side/viewfunction hvor user kan udfylde sine informationer.
     @classmethod
-    def create_user(cls, role, name, email, password):
+    def create_user(cls, role, email, password):
       """
       Create a new user with the provided details.
 
@@ -107,10 +96,8 @@ class User(UserMixin, db.Model):
       """
       
       user = cls( role     = role.strip(),
-                  name     = name.strip(),
                   email    = email.strip(),
                   password = bcrypt.generate_password_hash(password).decode('utf-8'),
-
                 )
                   # evt også image.
       db.session.add(user)
@@ -165,6 +152,74 @@ class User(UserMixin, db.Model):
       """
       email = User.query.filter_by(email=email).first()
       return email is not None
+    
+
+class SeekerProfile(db.Model):
+    """
+    User model representing a user in the application.
+    Inherits from both UserMixin and db.Model to integrate Flask-Login and SQLAlchemy.
+
+    UserMixin provides default implementations for the methods that Flask-Login
+    expects user objects to have:
+    - is_authenticated: Property that should return True if the user is authenticated.
+    - is_active: Property that should return True if the user is active.
+    - is_anonymous: Property that should return False for regular users.
+    - get_id(): Method that returns a unique identifier for the user as a string.
+
+    By inheriting from UserMixin, the User class automatically gets these methods,
+    making it compatible with Flask-Login's user management system.
+    """
+
+    __tablename__ = 'seekerprofiles'
+
+    # Primary key - nødvendigt?
+    id = db.Column(db.Integer, primary_key=True)
+
+    user_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False)
+
+    name = db.Column(db.String(80), nullable=False)
+
+    description = db.Column(db.String(500), nullable=True)
+
+    birthdate = db.Column(db.String(80), nullable=True)
+
+    gender = db.Column(db.String(80), nullable=True)
+
+    occupation = db.Column(db.String(80), nullable=True)
+
+    image = db.Column(db.String(500), nullable=True)
+
+
+    #user = db.relationship("User", back_populates="seekerprofile")
+
+    #TODO: Mange felter bliver efterladt null. Lav evt ny side/viewfunction hvor user kan udfylde sine informationer.
+    @classmethod
+    def create_seekerprofile(cls, user_id, name, description, birthdate, gender, occupation, image):
+      """
+      Create a new user with the provided details.
+
+      Args:
+          name (str): The user's name.
+          email (str): The user's email.
+          password (str): The user's password, which will be hashed before storage.
+
+      Returns:
+          User: The newly created user object.
+      """
+      
+      seekerprofile = cls( 
+                  user_id = user_id,
+                  name = name.strip(),
+                  description = description.strip(),
+                  birthdate = birthdate.strip(),
+                  gender = gender.strip(),
+                  occupation = occupation.strip(),
+                  image = image
+                )
+                  # evt også image.
+      db.session.add(seekerprofile)
+      db.session.commit()
+      return seekerprofile
       
 class Collective(db.Model):
     __tablename__ = 'collectives'
@@ -172,15 +227,17 @@ class Collective(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     submitter_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False)
 
-    description = db.Column(db.String(500))
+    # description = db.Column(db.String(500))
 
-    address = db.Column(db.String(500))
-  
-    space = db.Column(db.Integer())
+    city = db.Column(db.String(500))
+    street = db.Column(db.String(500))
 
-    slotsTotal = db.Column(db.Integer())
+    price = db.Column(db.Integer())
 
-    vacantSlots = db.Column(db.Integer())
+    # address = db.Column(db.String(500))
+
+    roomsize = db.Column(db.Integer())
+    image = db.Column(db.String(500))
   
     # Many-One relationship between Collective and User
     user = db.relationship("User", back_populates="collectives")
@@ -198,7 +255,7 @@ class Collective(db.Model):
         return Collective.query.filter_by(submitter_id=user_id).all()
     
     @classmethod
-    def create_collective(cls, submitter_id, address, space, slotsTotal, vacantSlots, description):
+    def create_collective(cls, submitter_id, city, street, roomsize, price, image):
       """
       Create a new collective with the provided details.
 
@@ -213,11 +270,11 @@ class Collective(db.Model):
       
       collective = cls(
           submitter_id = submitter_id,
-          address = address.strip(),
-          space = space,
-          slotsTotal = slotsTotal,
-          vacantSlots = vacantSlots,
-          description = description.strip()
+          price = price,
+          city = city.strip(),
+          street = street.strip(),
+          roomsize = roomsize,
+          image = image.strip()
       )
                   
       db.session.add(collective)
@@ -286,15 +343,24 @@ class Application(db.Model):
 def create_default_userbase():
   existing_seeker = User.query.filter_by(role="seeker").first()
   if not existing_seeker:
-     User.create_user("seeker", "Bob", "seeker@gmail.com", "123")
+     User.create_user("seeker", "seeker@gmail.com", "123")
   existing_provider = User.query.filter_by(role="provider").first()
   if not existing_provider:
-     User.create_user("provider", "Alice", "provider@gmail.com", "123")
+     User.create_user("provider", "provider@gmail.com", "123")
 
 # Debug Purposes
 def create_default_collectives_applications():
-  Collective.create_collective(2, "Skovbogade", 50, 5, 2, "Et dejligt kollektiv i Odense By") #submitterID = 2. provider@gmail.com.
+  Collective.create_collective(2, "Odense", "Vindegade", 50, 5000, "An image!") #submitterID = 2. provider@gmail.com.
+  Collective.create_collective(2, "Odense", "Vindegade", 50, 5000, "An image!") #submitterID = 2. provider@gmail.com.
+  Collective.create_collective(2, "Odense", "Vindegade", 50, 5000, "An image!") #submitterID = 2. provider@gmail.com.
+  Collective.create_collective(2, "Odense", "Vindegade", 50, 5000, "An image!") #submitterID = 2. provider@gmail.com.
+  Collective.create_collective(2, "Odense", "Vindegade", 50, 5000, "An image!") #submitterID = 2. provider@gmail.com.
+  Collective.create_collective(2, "Odense", "Vindegade", 50, 5000, "An image!") #submitterID = 2. provider@gmail.com.
+  Collective.create_collective(2, "Odense", "Vindegade", 50, 5000, "An image!") #submitterID = 2. provider@gmail.com.
+  
   Application.create_application(1, 1, "Jeg hedder Alice og vil gerne søge ind på kollektivet på Skovbogade.")
+
+
 
 # Clears the database and create tables within the application context
 with app.app_context():
@@ -314,42 +380,46 @@ def email_exists(form, field):
     raise ValidationError('Email already exists.')
 
 # WTForms for user registration.
-
 class RegistrationForm(Form):
   role = SelectField('Role', 
                          choices=[('seeker', 'Seeker'), ('provider', 'Provider')], 
                          validators=[DataRequired()])
-  name = StringField('Name', validators=[DataRequired(), Length(min=1, max=80, message='You cannot have less than 1 or more than 80 characters')])
+  # name = StringField('Name', validators=[DataRequired(), Length(min=1, max=80, message='You cannot have less than 1 or more than 80 characters')])
   email = EmailField('Email', validators=[DataRequired(), email_exists, Email()])
   password = PasswordField('Password', validators=[DataRequired(), EqualTo('confirm', message='Password must match')])
   confirm = PasswordField('Confirm', validators=[DataRequired()])
   submit = SubmitField('Register')
 
 
-"""
-for opdatering af profil:
-
- description = StringField('Describe yourself', validators=[DataRequired(), Length(min=1, max=80, message='You cannot have less than 1 or more than 80 characters')])
+class SeekerProfileForm(Form):
+  name = StringField('Name', validators=[DataRequired(), Length(min=1, max=80, message='You cannot have less than 1 or more than 80 characters')])
+  description = StringField('Describe yourself', validators=[DataRequired(), Length(min=1, max=80, message='You cannot have less than 1 or more than 80 characters')])
   birthdate = StringField('Birthdate', validators=[DataRequired(), Length(min=1, max=80, message='You cannot have less than 1 or more than 80 characters')])
   gender = StringField('Gender', validators=[DataRequired(), Length(min=1, max=80, message='You cannot have less than 1 or more than 80 characters')])
   occupation = StringField('Occupation', validators=[DataRequired(), Length(min=1, max=80, message='You cannot have less than 1 or more than 80 characters')])
   image = StringField('Image', validators=[DataRequired(), Length(min=1, max=80, message='You cannot have less than 1 or more than 80 characters')])
-
-"""
+  submit = SubmitField('Register')
 
 
 class CollectiveForm(Form):
-  address = StringField('Address of collective', validators=[DataRequired(), Length(min=1, max=80, message='You cannot have less than 1 or more than 80 characters')])
-  space = IntegerField('Amount of space (square meters)', validators=[DataRequired()])
-  slotsTotal = IntegerField('Amount of residents that the collective can hold', validators=[DataRequired()])
-  vacantSlots = IntegerField('Amount of available slots in the collective', validators=[DataRequired()])
-  description = StringField('Description of the collective', validators=[DataRequired(), Length(min=1, max=80, message='You cannot have less than 1 or more than 80 characters')])
+  #address = StringField('Address of collective', validators=[DataRequired(), Length(min=1, max=80, message='You cannot have less than 1 or more than 80 characters')])
+  city = StringField('Name of city', validators=[DataRequired(), Length(min=1, max=80, message='You cannot have less than 1 or more than 80 characters')])
+  street = StringField('Name of street', validators=[DataRequired(), Length(min=1, max=80, message='You cannot have less than 1 or more than 80 characters')])
+
+  roomsize = IntegerField('Size of the room available (square meters)', validators=[DataRequired()])
+
+  price = IntegerField('Price in DKK', validators=[DataRequired()])
+
+  image = StringField('Image of collective', validators=[DataRequired(), Length(min=1, max=80, message='You cannot have less than 1 or more than 80 characters')])
+
+  #slotsTotal = IntegerField('Amount of residents that the collective can hold', validators=[DataRequired()])
+  #vacantSlots = IntegerField('Amount of available slots in the collective', validators=[DataRequired()])
+  #description = StringField('Description of the collective', validators=[DataRequired(), Length(min=1, max=80, message='You cannot have less than 1 or more than 80 characters')])
   submit = SubmitField('Register your collective')
 
 class ApplicationForm(Form):
   description = StringField('Your application', validators=[DataRequired(), Length(min=1, max=80, message='You cannot have less than 1 or more than 80 characters')])
   submit = SubmitField('Apply for this collective')
-
 
 # WARNING --------------------------------------------------------------------
 # Checking if an email is already registered during form validation introduces 
@@ -370,8 +440,6 @@ class LoginForm(Form):
   remember = BooleanField('Remember Me')
   submit = SubmitField('Login')
 
-
-
 # SESSIONS --------------------------------------------------------------------
 
 # Initialize the LoginManager with the Flask application
@@ -387,7 +455,6 @@ login_manager.session_protection = 'strong'
 # the application needs to know the current user. It is called when the session 
 # is accessed, and the user's ID is retrieved from the session. The function 
 # then fetches the corresponding user from the database.
-
 
 @login_manager.user_loader
 def load_user_from_id(id):
@@ -452,9 +519,8 @@ def register():
     if request.method == 'POST' and form.validate():
       User.create_user(
                       role = form.role.data,
-                      name = form.name.data,
                       email = form.email.data,
-                      password = form.password.data,
+                      password = form.password.data
                       )
       flash("User created.","success")
 
@@ -500,6 +566,20 @@ Providers:
       - Uploads database and redirects to /provider.
 """
 
+
+# @app.route("/seeker",methods=["GET","POST"])  #TODO: Fjern POST? Bruges ikke.
+# @login_required
+# @seeker_permission.require()
+@app.route("/home",methods=["GET"])
+def home():
+  if not (current_user.is_authenticated):
+     return redirect(url_for("login"))
+  elif (current_user.role == "seeker"): 
+     return redirect(url_for("seeker"))
+  else:
+     return redirect(url_for("provider"))
+
+
 # ------------------------- Seeker Routes ---------------------------------
 @app.route("/seeker",methods=["GET","POST"])  #TODO: Fjern POST? Bruges ikke.
 @login_required
@@ -511,6 +591,28 @@ def seeker():
     return render_template("seeker.html", collective_entries=collective_entries, your_applications=your_applications)
 
 
+@app.route("/seekerprofile",methods=["GET","POST"])  #TODO: Fjern POST? Bruges ikke.
+@login_required
+@seeker_permission.require()
+def seekerprofile():
+    form = SeekerProfileForm(request.form)
+
+    if request.method == 'POST' and form.validate():
+      SeekerProfile.create_seekerprofile(
+          current_user.id, 
+          form.name.data,
+          form.description.data,
+          form.birthdate.data,
+          form.gender.data,
+          form.occupation.data,
+          form.image.data
+          )
+      return redirect(url_for("seeker"))
+    return render_template("seekerprofile.html", form=form)
+
+
+
+# Not used:
 @app.route("/apply/<int:id>", methods=["GET", "POST"])
 @login_required
 @seeker_permission.require()
@@ -531,6 +633,7 @@ def provider():
     # Get all collectives that Provider owns. Done directly by accessing foreign keys.
     # evt. anvend user.collectives (vha. db.relationship())
     collective_entries = Collective.get_by_submitter(current_user.id)
+  
 
     # Get all applications mapped to these collectives.
     application_entries = [
@@ -549,11 +652,12 @@ def new_collective():
   if request.method == 'POST' and form.validate():
       Collective.create_collective(
           current_user.id, 
-          form.address.data,
-          form.space.data,
-          form.slotsTotal.data,
-          form.vacantSlots.data,
-          form.description.data)
+          form.city.data,
+          form.street.data,
+          form.roomsize.data,
+          form.price.data,
+          form.image.data
+          )
       return redirect(url_for("provider"))
   return render_template("new_collective.html", form=form)
 

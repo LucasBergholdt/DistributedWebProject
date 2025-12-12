@@ -1,47 +1,21 @@
 {% extends 'base.html' %}
 
 {% block body%}
-<h1>Hello {{ current_user.role }} {{ current_user.name }}!</h1>
-<p>
-  If you wish, you can <a
-    href="{{ url_for('logout')}}">log out here</a>.
-</p>
 
-<h2>
-  Here is a list of all collectives that you can apply for.</a>.
+<h2 class="my-4 mx-4">
+  Collectives looking for a new resident</a>
 </h2>
-  <table>
-    <tr>
-      <th>ID</th>
-      <th>Address</th>
-      <th>Apply</th>
-    </tr>
+
+<div class="d-flex align-items-start flex-wrap p-3 bg-light">  <!-- TODO: align-items eller align-contents?-->
   {% for entry in collective_entries %}
-    <tr>
-      <td>{{ entry.id }}</td>
-      <td>{{ entry.address }}</td>
-      <td><a href="/apply/{{ entry.id }}">Apply</a></td>
-    </tr>
+  <!-- div of one collective-->
+  <div class="container-s p-3 m-2 border"> 
+    <div class="container-fluid">{{ entry.image }}</div>
+    <p class="mb-1">Room is {{ entry.roomsize }} square meters.</p>
+    <p class="mb-1">{{ entry.city }}, {{ entry.street }}</p>
+    <p class="mb-0">{{ entry.price }} DKK</p>
+  </div>
   {% endfor %}
-  </table>
-
-<h2>
-  Here is a list of all collectives that you have applied for already.</a>.
-</h2>
-</p>
-<table>
-  <tr>
-    <th>Application ID</th>
-    <th>Collective Address</th>
-    <th>Description</th>
-  </tr>
-{% for entry in your_applications %}
-  <tr>
-    <td>{{ entry.id }}</td>
-    <td>{{ entry.collective.address }}</td>
-    <td>{{ entry.description }}</td>
-  </tr>
-{% endfor %}
-</table>
+</div>
 
 {% endblock body%}

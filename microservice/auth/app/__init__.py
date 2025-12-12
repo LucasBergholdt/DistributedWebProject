@@ -32,7 +32,7 @@ class User(db.Model):
   # User's role ('seeker' or 'provider')
   role = db.Column(db.String(20), nullable=False) #TODO: Could use seperate roles table for better scaling
   
-  session = db.relationship("Session", back_populates="users")
+  sessions = db.relationship("Session", back_populates="user")
 
   def check_password(self, password):
     """
@@ -201,7 +201,7 @@ def register():
   
   # TODO: Bør man tjekke at email og password ikke er null. Vi laver jo altid en forms.validate inden, men kan kan vel teknisk set godt kalde uden det er gjort.
   # TODO: har gjort det for nu...
-  if all([email, password, role]): # works because None = False
+  if not all([email, password, role]): # works because None = False
     return jsonify([{"error": "Missing required fields"}]), 400
   
   if (User.email_exists(email)):

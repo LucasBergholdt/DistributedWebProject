@@ -4,10 +4,14 @@ services:
   frontend:
     build: ./frontend
     ports:
-      - "4999-5000:5000" # Denne skal ændres afhængigt af antal replicas man ønsker. (dette er 2)
+      - "5000:5000" # Denne skal ændres afhængigt af antal replicas man ønsker. (dette er 2)
     environment: 
       - AUTH_API_URL=http://auth:5000 # Container to container communication
       - COLLECTIVES_API_URL=http://collectives:5000
+    #TODO: FOR DEBUGGING
+    volumes:                    # debug
+      - ./frontend:/app         # debug
+    command: flask run --debug  # debug
     depends_on:
       - auth
       - collectives
@@ -17,6 +21,10 @@ services:
       - "5001:5000" # tilgå logic på 5001 porten
     environment:
       - DATABASE_URL=postgresql://postgres:postgres@db:5432/postgres
+    #TODO: FOR DEBUGGING
+    volumes:                    # debug
+      - ./auth:/app             # debug
+    command: flask run --debug  # debug
     depends_on:
       - db
   
@@ -26,9 +34,10 @@ services:
       - "5002:5000"  # Expose collectives service
     environment:
       - DATABASE_URL=postgresql://postgres:postgres@db:5432/postgres
-    # volumes: # Hjælper med at køre i debug mode. 
-    #   - ./collectives/:/app
-      # God idé at fjerne, når et projekt afleveres. 
+    #TODO: FOR DEBUGGING
+    volumes:                    # debug
+      - ./collectives/:/app     # debug
+    command: flask run --debug  # debug
     depends_on:
       - db
 

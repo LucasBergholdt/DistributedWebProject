@@ -54,7 +54,7 @@ def home():
   token = session.get('session_token')
   if token:
     # Check if token matches an active session
-    response = requests.get(f"{AUTH_API}/sessions", params={"api_token": token})
+    response = requests.get(f"{AUTH_API}/sessions", params={"session_token": token})
     # If it does user is already logged in
     if response.status_code == 200:
       #TODO: Should we save the data here aswell or is it fine to assume that it is already set?
@@ -98,14 +98,15 @@ def dashboard():
   role = session.get("role")
   
   if role == "seeker":
-    return redirect(url_for("collective_overview"))
+    return render_template("test.html")
+    #return redirect(url_for("collective_overview"))
   elif role == "provider":
     return redirect(url_for("my_collectives"))
   else:
     return redirect(url_for("home"))
 
 
-@app.route("/users", methods=['POST', 'GET'])
+@app.route("/register", methods=['POST', 'GET'])
 def register():
   """
   Registration page.
@@ -124,6 +125,10 @@ def register():
                                                         "password": form.password.data, 
                                                         "role": form.role.data}) 
     if response.status_code == 200:
+      # Set up session cookie to log user in. QOL so users don't have to login right after registering
+      data = response.json()
+      session["role"] = data["role"]
+      session["session_token"] = data["session_token"]
       flash("Registration successful", "success")
       return redirect(url_for('dashboard')) # redirect based on user's role
     else:

@@ -1,27 +1,30 @@
 import os
 import requests
-from wtforms import Form, SubmitField, StringField, EmailField, PasswordField, BooleanField
-from wtforms.validators import DataRequired, Length, Email, EqualTo
-from flask import Flask, make_response, redirect, render_template, request, session, url_for, flash
+from wtforms import Form, SelectField, SubmitField, EmailField, PasswordField, BooleanField
+from wtforms.validators import DataRequired, Email, EqualTo
+from flask import Flask, redirect, render_template, request, session, url_for, flash
 
 app = Flask(__name__)
 
 # WARNING: CSRF protection is disabled for simplicity in this project
 app.config['WTF_CSRF_ENABLED'] = False
 # Secret key for session management and security features
-app.config['SECRET_KEY'] = "change-me"
+app.config['SECRET_KEY'] = "change-me" #TODO Få denne fra environment?
 
 # API URLs to microservices
 AUTH_API = os.getenv('AUTH_API_URL')
-TODO_API = os.getenv('COLLECTIVES_API_URL')
+COLLECTIVES_API = os.getenv('COLLECTIVES_API_URL')
 
 # Forms -----------------------------------------------------------------------
+#TODO: Smid over i anden fil og import?
+#TODO: Tilføj length validators i overenstemmelse med database constraints
 
 # WTForms for user registration
 class RegistrationForm(Form):
   email = EmailField('Email', validators=[DataRequired(), Email()]) #i: formerly had check if email already existed.
   password = PasswordField('Password', validators=[DataRequired(), EqualTo('confirm', message='Password must match')])
   confirm = PasswordField('Confirm', validators=[DataRequired()])
+  role = SelectField("Role", choices=[('seeker', 'Seeker'), ('provider', 'Provider')], validators=[DataRequired()])
   submit = SubmitField('Register')
 
 # WTForms for user login
@@ -32,205 +35,120 @@ class LoginForm(Form):
   submit = SubmitField('Login')
 
 
-# ROUTES for login ----------------------------------------------------------------------
+# ROUTES ----------------------------------------------------------------------
 
 @app.route("/", methods=('GET','POST'))
 def home():
   """
-  Main page:
-  - Landing page. Handles cookies. 
-  - Current session stored in browser.
-  - Requests data from the backend and acts upon returned message.
+  Landing page.
+  
+  Checks if current session token matches an active session.
+  - If it does, redirects user based on role
+  - If not, render login form and sends requests to auth to log in user
+  - On success sets the session cookie
+
+  Returns:
+      Response | str: Redirect to dashboard or render login template
   """
   # Get the current session cookie from browser
   token = session.get('session_token')
-  
   if token:
-
-    # Tjekker om brugerens session eksisterer. 
-    # /sessions GET
+    # Check if token matches an active session
     response = requests.get(f"{AUTH_API}/sessions", params={"api_token": token})
-  
-    if response.status_code == 200: 
+    # If it does user is already logged in
+    if response.status_code == 200:
+      #TODO: Should we save the data here aswell or is it fine to assume that it is already set?
+      data = response.json()
+      session["role"] = data["role"]
       flash("already logged in")
-      return redirect(url_for('todos'))
+      return redirect(url_for("dashboard"))
 
-  # Hvis session ikke eksisterer, foretag normal startside flow. 
+  # If session doesn't exist, user needs to login 
   form = LoginForm(request.form)
-
-  if request.method == 'POST'and form.validate():  # Logging in
+  if request.method == 'POST' and form.validate():  # Logging in
     email = form.email.data
     password = form.password.data
- 
-    # /sessions POST
-    response = requests.post(f"{AUTH_API}/sessions", json={
-        "email": email,
-        "password": password,
-      }) 
+    # Create session: POST /sessions 
+    response = requests.post(f"{AUTH_API}/sessions", 
+                             json={"email": email, "password": password}) 
 
     if response.status_code == 200:
-      
-      ## Get json from backend
-      data = response.json() # modtag token fra backend, for at sætte den i cookie. 
-      
-      # Login og set den returnerede token i vores browser-cookie. 
-      flask_response = make_response(redirect(url_for('todos')))
-      flask_response.set_cookie("api_token", data["api_token"], httponly=True, samesite="Lax", path='/')
-
-      # session['user_id'] = data['user_id']        # DENNE SKAL MAN BRUGE, HVIS MAN ØNSKRE DEN TRADITIONELLE SESSION-COOKIE, I STEDET FOR "API-TOKEN"
-      
+      ## Get json from auth service
+      data = response.json()
+      # Set session coookie
+      session["role"] = data["role"]
+      session["session_token"] = data["session_token"]
       flash("Login successful!", "success")
-      
-      return flask_response
+      return redirect(url_for("dashboard"))
     else:
-      flash(response.json().get("message", "Login failed"), "error")
-      return render_template("login.html", form=form)
-    
+      flash(response.json().get("error", "Login failed"), "error")
+  
+  # Render login site
   return render_template('login.html', form=form)
 
 
-# Vi har brug for en GET til at render en page, selvom vi kun POSTer noget.
+@app.route("/dashboard")
+def dashboard():
+  """
+  Redirects the user to appropriate site based on role
+
+  Returns:
+      Response: the redirect response
+  """
+  role = session.get("role")
+  
+  if role == "seeker":
+    return redirect(url_for("collective_overview"))
+  elif role == "provider":
+    return redirect(url_for("my_collectives"))
+  else:
+    return redirect(url_for("home"))
+
+
 @app.route("/users", methods=['POST', 'GET'])
 def register():
   """
-  Registration page:
+  Registration page.
+  Sends a request to auth to register the user based on the filled out RegistrationForm.
+
+  Returns:
+      Response | str: Redirect to dashboard or render regisration page
   """
 
-  # Overvej at kontrollere hvorvidt en bruger allerede er logget ind. 
+  # TODO: Overvej at kontrollere hvorvidt en bruger allerede er logget ind -> tror ikke det er nødvendigt
 
   form = RegistrationForm(request.form)
   if request.method == 'POST' and form.validate():
-
-    name = request.form['name']
-    email = request.form['email']
-    password = request.form['password']
-
-    # /users POST
-    response = requests.post(f"{AUTH_API}/users", json={
-        "name": name,
-        "email": email,
-        "password": password
-      }) 
-  
+    # Register: POST /users
+    response = requests.post(f"{AUTH_API}/users", json={"email": form.email.data, 
+                                                        "password": form.password.data, 
+                                                        "role": form.role.data}) 
     if response.status_code == 200:
-      flash("Registration Successful","success")
-      return redirect(url_for('home')) # Redirect to "/". 
+      flash("Registration successful", "success")
+      return redirect(url_for('dashboard')) # redirect based on user's role
     else:
-      flash("Registration not succesful", "fail")
-      return render_template('register.html', form=form)
-    
+      flash("Registration failed", "error")
+  
+  # Render registration page
   return render_template('register.html', form=form)
+
 
 @app.route('/logout', methods=['POST'])
 def logout_view():
-  """Deletes Session entry."""
-  
-  token = request.cookies.get("api_token")
+  """
+  Log out user by asking auth to delete session entry.
 
+  Returns:
+      Response: Redirect to home
+  """
+  token = session.get('session_token')
   if token:
+    response = requests.delete(f"{AUTH_API}/sessions", params={"session_token": token})
     
-    response = requests.delete(f"{AUTH_API}/sessions", params={"api_token":token})
-
     if response.ok:
-      flash("Session ended","success")
-      resp = redirect(url_for('home'))
-      resp.set_cookie("api_token", "", expires=0)
-      return resp
-  else:
-    flash("Session did not end", "fail")
-    return redirect(url_for('home'))
-
-
-
-
-
-
-
-# Routes for todo ----------------------------------------------------------------------
-
-# @app.route("/todo",methods=["GET","POST"])
-# def todo():
-#   form = EntryForm(request.form)
-#   if request.method == 'POST' and form.validate():
-#     text = form.text.data
-#     db.session.add(Entry(text = text))
-#     db.session.commit()
-#   entries = Entry.query.order_by(Entry.id).all()
-#   return render_template("todo.html", entries=entries, form=form)
-
-#---------
-# LOGIC API -> HTTP request to logic container inside of docker 
-# Connecting front end to backend. 
-
-# KOMMUNIKATION MED TO-DO
-
-  @app.route("/todos",methods=["GET","POST"])
-  def todos():
-    
-    ### Tjekke, om en bruger allerede er logget ind via browserens cookies. 
-    token = request.cookies.get('api_token')
-
-    user_id = None
-
-    if token:
-      response = requests.get(f"{AUTH_API}/sessions", params={"api_token":token})
-      if response.ok:
-        user_id = response.json().get("user_id")
-    
-    if user_id is None:
+      session.clear()
+      flash("Session ended", "success")
       return redirect(url_for("home"))
-
-    if not TODO_API:
-      raise ValueError("TODO_API_URL environment variable is not set!")
-
-    # ovenstående muligvis unødvendigt. 
-
-    ## ACTUAL FUNCTIONALITY HERE ##
-
-    # Hvis en bruger vil tilføje nyt:
-    form = EntryForm(request.form)
-    if request.method == 'POST' and form.validate():
-      text = form.text.data
-      # form.completed.data
-
-      # POST to BACKEND TO_DO:
-      # mangler tjek om korrekt (201)
-      requests.post(f"{TODO_API}/todos", json={"text": text, "user_id":user_id})
     
-    # GET entries already existing from the backend (todos).
-    response = requests.get(f"{TODO_API}/todos",params={"user_id":user_id}) # Request GET
-    entries = response.json() if response.ok else [] # place data in entries, for use below. 
-    
-    return render_template("todo.html", entries=entries, form=form)
-
-
-# @app.route("/delete/<int:id>")
-# def delete(id):
-#   entry = Entry.query.filter_by(id=id).first()
-#   if entry:
-#     db.session.delete(entry)
-#     db.session.commit()
-#     flash('Entry deleted.', 'info')
-#   else:
-#     flash("Sorry, we couldn't find the entry that you wanted to delete.", 'warning')
-#   return redirect(url_for('todo'))
-
-@app.route("/delete/<int:id>")
-def delete(id):
-
-  token = request.cookies.get('api_token')
-
-  user_id = None
-
-  if token:
-    response = requests.get(f"{AUTH_API}/sessions", params={"api_token":token})
-    if response.ok:
-      user_id = response.json().get("user_id")
-  
-  response = requests.delete(f"{TODO_API}/todos/{user_id}/{id}")
-  
-  if response.status_code == 204:
-    flash('Entry deleted.', 'info')
-  else:
-    flash("Sorry, we couldn't find the entry that you wanted to delete.", 'warning')
-  return redirect(url_for('todos'))
+  flash("Logout failed", "error")
+  return redirect(url_for("home")) #TODO: Skal vi redirecte til home??

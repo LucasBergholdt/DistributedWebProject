@@ -26,9 +26,11 @@ class User(db.Model):
 
   id = db.Column(db.Integer, primary_key=True)
   # User's email, it is used as user identification during authentication so must be unique but it can be changed over time
-  email      = db.Column(db.String(60), unique=True, index=True)
+  email = db.Column(db.String(60), unique=True, index=True)
   # User's password, stored as a hash
-  password   = db.Column(db.String(80))
+  password = db.Column(db.String(80))
+  # User's role ('seeker' or 'provider')
+  role = db.Column(db.String(20), nullable=False) #TODO: Could use seperate roles table for better scaling
   
   session = db.relationship("Session", back_populates="users")
 
@@ -45,19 +47,21 @@ class User(db.Model):
     return bcrypt.check_password_hash(self.password, password)
 
   @classmethod
-  def create_user(cls, email, password):
+  def create_user(cls, email, password, role):
     """
     Create a new user with the provided details.
 
     Args:
         email (str): The user's email.
         password (str): The user's password, which will be hashed before storage.
+        role (str): The user's role, either 'seeker' or 'provider'
 
     Returns:
         User: The newly created user object.
     """
     user = cls( email    = email.strip(),
-                password = bcrypt.generate_password_hash(password).decode('utf-8') )
+                password = bcrypt.generate_password_hash(password).decode('utf-8'),
+                role     = role)
     db.session.add(user)
     db.session.commit()
     return user
@@ -184,19 +188,20 @@ def register():
   
   Expects a JSON payload with 'email' and 'password'.
   - If email doesn't already exist, creates a new user and an associated session
-  - On success returns JSON with user id and session token.
+  - On success returns JSON with user id, role and session token.
 
   Returns:
       Response: JSON object with either an error or authentication details.
   """
   # Get data from the request
-  data = request.get_json()
-  email = data.get('email')
+  data     = request.get_json()
+  email    = data.get('email')
   password = data.get('password')
+  role     = data.get('role')
   
   # TODO: Bør man tjekke at email og password ikke er null. Vi laver jo altid en forms.validate inden, men kan kan vel teknisk set godt kalde uden det er gjort.
   # TODO: har gjort det for nu...
-  if not email or not password:
+  if all([email, password, role]): # works because None = False
     return jsonify([{"error": "Missing required fields"}]), 400
   
   if (User.email_exists(email)):
@@ -204,13 +209,18 @@ def register():
   else:
     # Create user and a session
     user = User.create_user(
-      email = email,
-      password = password
+      email    = email,
+      password = password,
+      role     = role
     )
     
     session = Session.create_session(user.id)
     
-    return jsonify({"message": "Authenticated (user created)", "user_id": user.id, "session_token": session.token}), 200
+    return jsonify({"message": "Authenticated (user created)", 
+                    "user_id": user.id,
+                    "role": role,
+                    "session_token": session.token
+                    }), 200
   
   
 @app.route("/sessions", methods=['POST'])
@@ -230,21 +240,27 @@ def login_authentication():
   password = data.get('password')
   user = User.get_by_email(email)
 
-  # TODO: Vi sender aldrig en token med, men i guess de giver god defensive mening at lave dette tjek? Security risk?
+  # TODO: Vi sender aldrig en token med, men i guess det giver god defensive mening at lave dette tjek? Security risk uden?
   # If the token already exists, the user is already logged in.
   if token and Session.session_exists(token):
         session = Session.get_by_token(token)
+        user = User.get_by_id(session.user_id)
         return jsonify({
             "message": "Token already exists",
             "user_id": session.user_id,
+            "role": user.role,
             "session_token": session.token
         }), 200
   
   # Check credentials:
   if user and user.check_password(password):
-    # Valid credentials: create session and return user id and session token.
+    # Valid credentials: create session and return user id, role and session token.
     session = Session.create_session(user_id=user.id)
-    return jsonify({"message": "Authenticated (new token)", "user_id": user.id, "session_token": session.token})
+    return jsonify({"message": "Authenticated (new token)", 
+                    "user_id": user.id, 
+                    "role": user.role,
+                    "session_token": session.token
+                    }), 200
   else:
     # Invalid credentials:
     return jsonify({"error": "Invalid credentials"}), 401
@@ -257,7 +273,7 @@ def current_session():
   Fetches session information.
   
   Expectrs a JSON payload with 'session_token'.
-  - If session with token exists return users id, session token and session creation date.
+  - If session with token exists return users id, role, session token and session creation date.
   - If no session with token exists return error.
 
   Returns:
@@ -272,10 +288,12 @@ def current_session():
     return jsonify({"error": "Invalid or expired token"}), 401
   else:
     # Session exists so we return relevant information
+    user = User.get_by_id(session.user_id)
     return jsonify({
       "user_id": session.user_id,
+      "role": user.role,
       "session_token": session.token,
-      "created_at": session.created_at.isoformat()
+      "created_at": session.created_at.isoformat()  #TODO: Currently not used
     })
 
 

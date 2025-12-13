@@ -1,0 +1,19 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <title>Flask Session</title>
+  <meta charset="UTF-8">
+</head>
+
+<body>
+  <!-- The message pop-up, when succesful logging in fx. -->
+  {%- set messages = get_flashed_messages(with_categories=true) -%}
+  {%- if messages -%}
+    {%- for category,message in messages %}
+    <p><strong>{{ category }}</strong> {{ message }}</p>
+    {% endfor -%}
+  {%- endif -%}
+  {% block body %}{% endblock %}
+</body>
+</html>

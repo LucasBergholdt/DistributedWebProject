@@ -1,0 +1,7 @@
+By default i Flask vil brugeren ikke være logget ind mere hvis de lukker browseren og åbner den igen.
+Ifølge: https://stackoverflow.com/questions/11783025/is-there-an-easy-way-to-make-sessions-timeout-in-flask
+Kan være vi skal lave det om ved at ændre app.config['PERMANENT_SESSION_LIFETIME']
+
+
+Tilføj decorator.
+Ændre til response.ok i stedet for at tjekke status code direkte, hvor det giver mening.

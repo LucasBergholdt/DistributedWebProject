@@ -4,7 +4,7 @@ services:
   frontend:
     build: ./frontend
     ports:
-      - "5000:5000" # Denne skal ændres afhængigt af antal replicas man ønsker. (dette er 2)
+      - "5000:5000" 
     environment: 
       - AUTH_API_URL=http://auth:5000 # Container to container communication
       - COLLECTIVES_API_URL=http://collectives:5000

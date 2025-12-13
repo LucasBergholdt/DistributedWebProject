@@ -7,6 +7,13 @@ from flask_bcrypt import Bcrypt
 from flask_principal import Principal, Permission, RoleNeed, UserNeed, Identity, AnonymousIdentity, identity_changed, identity_loaded
 from wtforms import IntegerField, DateTimeField, DecimalField, FileField, Form, SubmitField, SelectField, StringField, EmailField, PasswordField, BooleanField, ValidationError
 from wtforms.validators import DataRequired, Length, Email, EqualTo, InputRequired
+from werkzeug.utils import secure_filename
+import os
+
+#flask_wtf
+from flask_wtf import FlaskForm
+from flask_wtf.file import FileField, FileRequired
+from werkzeug.utils import secure_filename
 
 app = Flask(__name__)
 app.config['TEMPLATES_AUTO_RELOAD'] = True # FOR DEBUGGING PURPOSE
@@ -17,6 +24,17 @@ app.config['SQLALCHEMY_DATABASE_URI'] = "sqlite:///flask.db"
 app.config['WTF_CSRF_ENABLED'] = False
 # Secret key for session management and security features
 app.config['SECRET_KEY'] = "change-me"
+
+# Configure app for images
+
+UPLOAD_FOLDER = 'static/images'
+ALLOWED_EXTENSIONS = {'txt', 'pdf', 'png', 'jpg', 'jpeg', 'gif'}
+
+app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
+
+def allowed_file(filename):
+    return '.' in filename and \
+           filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS
 
 # Initialize SQLAlchemy and Bcrypt extensions
 db = SQLAlchemy(app)
@@ -402,7 +420,7 @@ class SeekerProfileForm(Form):
   submit = SubmitField('Register')
 
 
-class CollectiveForm(Form):
+class CollectiveForm(FlaskForm):
   #address = StringField('Address of collective', validators=[DataRequired(), Length(min=1, max=80, message='You cannot have less than 1 or more than 80 characters')])
   city = StringField('Name of city', validators=[DataRequired(), Length(min=1, max=80, message='You cannot have less than 1 or more than 80 characters')])
   street = StringField('Name of street', validators=[DataRequired(), Length(min=1, max=80, message='You cannot have less than 1 or more than 80 characters')])
@@ -411,11 +429,13 @@ class CollectiveForm(Form):
 
   price = IntegerField('Price in DKK', validators=[DataRequired()])
 
-  image = StringField('Image of collective', validators=[DataRequired(), Length(min=1, max=80, message='You cannot have less than 1 or more than 80 characters')])
+  image = FileField(validators=[FileRequired()])
 
-  #slotsTotal = IntegerField('Amount of residents that the collective can hold', validators=[DataRequired()])
-  #vacantSlots = IntegerField('Amount of available slots in the collective', validators=[DataRequired()])
-  #description = StringField('Description of the collective', validators=[DataRequired(), Length(min=1, max=80, message='You cannot have less than 1 or more than 80 characters')])
+  # idk what this for
+  #def validate_image(form, field):
+   #   if field.data:
+    #      field.data = re.sub(r'[^a-z0-9_.-]', '_', field.data)
+
   submit = SubmitField('Register your collective')
 
 class ApplicationForm(Form):
@@ -612,20 +632,6 @@ def seekerprofile():
     return render_template("seekerprofile.html", form=form)
 
 
-
-# Not used:
-@app.route("/apply/<int:id>", methods=["GET", "POST"])
-@login_required
-@seeker_permission.require()
-def apply(id):
-  """For applying to a collective.
-  """
-  form = ApplicationForm(request.form)
-  if request.method == 'POST' and form.validate():
-      Application.create_application(current_user.id, id, form.description.data)
-      return redirect(url_for("seeker"))
-  return render_template("apply.html", form=form)
-
 # ------------------------- Provider Routes ---------------------------------
 @app.route("/provider",methods=["GET","POST"])
 @login_required
@@ -635,29 +641,35 @@ def provider():
     # evt. anvend user.collectives (vha. db.relationship())
     collective_entries = Collective.get_by_submitter(current_user.id)
   
-
     # Get all applications mapped to these collectives.
-    application_entries = [
-      application
-      for collective in collective_entries
-        for application in collective.applications  #relationship() anvendes.
-    ]
-    return render_template("provider.html", collective_entries=collective_entries, application_entries=application_entries)
+    #application_entries = [
+    #  application
+    #  for collective in collective_entries
+    #    for application in collective.applications  #relationship() anvendes.
+    #]
+    return render_template("provider.html", collective_entries=collective_entries)
 
 @app.route("/new_collective", methods=["GET", "POST"])
 @login_required
 @provider_permission.require()
 def new_collective():
-  form = CollectiveForm(request.form)
-  
-  if request.method == 'POST' and form.validate():
+  form = CollectiveForm()
+
+  if form.validate_on_submit():
+      f = form.image.data
+      filename = secure_filename(f.filename)
+      filepath = os.path.join(
+          app.config['UPLOAD_FOLDER'], filename
+      )
+      f.save(filepath)
+
       Collective.create_collective(
           current_user.id, 
           form.city.data,
           form.street.data,
           form.roomsize.data,
           form.price.data,
-          form.image.data
+          filename
           )
       return redirect(url_for("provider"))
   return render_template("new_collective.html", form=form)
@@ -696,3 +708,17 @@ def delete_application(id):
     else:
       flash("Sorry, we couldn't find the application that you wanted to delete.", 'warning')
     return redirect(url_for(current_user.role))
+
+
+# Not used:
+@app.route("/apply/<int:id>", methods=["GET", "POST"])
+@login_required
+@seeker_permission.require()
+def apply(id):
+  """For applying to a collective.
+  """
+  form = ApplicationForm(request.form)
+  if request.method == 'POST' and form.validate():
+      Application.create_application(current_user.id, id, form.description.data)
+      return redirect(url_for("seeker"))
+  return render_template("apply.html", form=form)

@@ -1,0 +1,22 @@
+{% extends 'base.html' %}
+
+{% block body%}
+<h1>Welcome You!</h1>
+
+<form action="{{ url_for('profile') }}" method="GET" style="display:inline;">
+    <button type="submit">Profile</button>
+</form>
+
+<form action="{{ url_for('login') }}" method="GET" style="display:inline;">
+    <button type="submit">Login</button>
+</form>
+
+<form action="{{ url_for('register') }}" method="GET" style="display:inline;">
+    <button type="submit">Register</button>
+</form>
+
+<form action="{{ url_for('logout_view') }}" method="POST" style="display:inline;">
+    <button type="submit">Log out</button>
+</form>
+
+{% endblock body%}

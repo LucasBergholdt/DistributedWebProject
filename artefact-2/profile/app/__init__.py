@@ -1,4 +1,5 @@
 
+from datetime import date
 import os
 from flask import Flask, jsonify, request
 from flask_sqlalchemy import SQLAlchemy
@@ -46,17 +47,23 @@ class SeekerProfile(db.Model):
         Returns:
             SeekerProfile: The newly created profile object
         """
+        print("DEBUG: Entered create_seekerprofile")
+        if birthdate:
+            birthdate = (date.fromisoformat(birthdate))
+        #TODO Har fjernet .strip() fordi felterne godt kan være None. Men vi skal nok stadig have strip funktionalitet.
         seekerprofile = cls(
                             user_id = user_id,
-                            name = name.strip(),
-                            description = description.strip(),
-                            birthdate = birthdate.strip(),
-                            gender = gender.strip(),
-                            occupation = occupation.strip(),
+                            name = name,
+                            description = description,
+                            birthdate = birthdate,
+                            gender = gender,
+                            occupation = occupation,
                             image = image
                             )
         db.session.add(seekerprofile)
+        print("DEBUG: About to commit new profile")
         db.session.commit()
+        print("DEBUG: Commit succesful")
         return seekerprofile
     
     @staticmethod
@@ -83,7 +90,7 @@ class SeekerProfile(db.Model):
         return {
             "name": self.name,
             "description": self.description,
-            "birthdate": self.birthdate,
+            "birthdate": self.birthdate.isoformat() if self.birthdate else None,
             "gender": self.gender,
             "occupation": self.occupation,
             "image": self.image
@@ -101,6 +108,8 @@ class SeekerProfile(db.Model):
             occupation (str): User's occupation
             image (str): User's profile picture
         """
+        if birthdate:
+            birthdate = (date.fromisoformat(birthdate))
         self.name = name
         self.description = description
         self.birthdate = birthdate
@@ -150,7 +159,9 @@ def put_profile(user_id):
         Response: JSON object with the new profile
     """
     # Get all the profile data from the request
+    print(f"DEBUG: PUT /profiles/{user_id} received")
     data = request.get_json()
+    print(f"DEBUG: Request data: {data}")
     
     name = data.get("name")
     description = data.get("description")
@@ -168,9 +179,15 @@ def put_profile(user_id):
         status_code = 200
     else:
         # Create profile with provided information
+        print("DEBUG: Profile not found, calling create_seekerprofile")
         profile = SeekerProfile.create_seekerprofile(user_id, name, description, birthdate, gender, occupation, image)
+        print("DEBUG: Returned from create_seekerprofile")
         status_code = 201
-        
+    
+    print("DEBUG: Profile operation complete, about to jsonifuy response")
+    response = jsonify(profile.to_dict())
+    print("DEBUG: JSONification successful")
+    return response, status_code
     return jsonify(profile.to_dict()), status_code
 
 

@@ -8,6 +8,7 @@ services:
     environment: 
       - AUTH_API_URL=http://auth:5000 # Container to container communication
       - COLLECTIVES_API_URL=http://collectives:5000
+      - PROFILE_API_URL=http://profile:5000
     #TODO: FOR DEBUGGING
     volumes:                    # debug
       - ./frontend:/app         # debug
@@ -15,6 +16,7 @@ services:
     depends_on:
       - auth
       - collectives
+      - profile
   auth:
     build: ./auth
     ports:
@@ -37,6 +39,19 @@ services:
     #TODO: FOR DEBUGGING
     volumes:                    # debug
       - ./collectives/:/app     # debug
+    command: flask run --debug  # debug
+    depends_on:
+      - db
+
+  profile:
+    build: ./profile
+    ports:
+      - "5003:5000"  # Expose profile service
+    environment:
+      - DATABASE_URL=postgresql://postgres:postgres@db:5432/postgres
+    #TODO: FOR DEBUGGING
+    volumes:                    # debug
+      - ./profile/:/app     # debug
     command: flask run --debug  # debug
     depends_on:
       - db

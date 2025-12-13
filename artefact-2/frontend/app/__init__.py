@@ -1,8 +1,9 @@
+from datetime import date
 from functools import wraps
 import os
 import requests
-from wtforms import Form, SelectField, SubmitField, EmailField, PasswordField, BooleanField
-from wtforms.validators import DataRequired, Email, EqualTo
+from wtforms import DateField, Form, SelectField, StringField, SubmitField, EmailField, PasswordField, BooleanField, TextAreaField
+from wtforms.validators import DataRequired, Email, EqualTo, Optional, Length
 from flask import Flask, redirect, render_template, request, session, url_for, flash
 
 app = Flask(__name__)
@@ -35,6 +36,15 @@ class LoginForm(Form):
   password = PasswordField('Password', validators=[DataRequired()])
   remember = BooleanField('Remember Me')
   submit = SubmitField('Login')
+  
+class ProfileForm(Form): #TODO Afviger fra monolit form
+  name = StringField('Name', validators=[Optional(), Length(max=80)])
+  description = TextAreaField('About you', validators=[Optional(), Length(max=500)])
+  birthdate = DateField('Birthdate', format="%Y-%m-%d", validators=[Optional()])
+  gender = StringField('Gender', validators=[Optional(), Length(max=80)])
+  occupation = StringField('Occupation', validators=[Optional(), Length(max=80)])
+  image = StringField('Profile Picture', validators=[Optional(), Length(max=500)])
+  submit = SubmitField('Save Profile')
 
 
 # DECORATORS ----------------------------------------------------------------------
@@ -189,7 +199,7 @@ def register():
       session["role"] = data["role"]
       session["session_token"] = data["session_token"]
       flash("Registration successful", "success")
-      return redirect(url_for('dashboard')) # redirect based on user's role
+      return redirect(url_for('home')) # TODO: Kan man lave noget nice hvor man redirectes tilbage til hvor man var inden man blev sendt til register
     else:
       flash("Registration failed", "error")
   
@@ -225,58 +235,61 @@ def logout_view():
 @app.route("/profile", methods=['GET'])
 @role_required("seeker")  # Also ensures user is authenticated
 def profile():
+  """
+  The seeker's profile page.
+
+  Returns:
+      str: The profile page with seeker's profile info if any
+  """
   user_id = session.get("user_id")
   
   response = requests.get(f"{PROFILE_API}/profiles/{user_id}")
   
   if response.ok:
     profile = response.json()
+    # Convert birthdate string from JSON back to date object
+    if profile.get("birthdate"):
+      profile["birthdate"] = date.fromisoformat(profile["birthdate"])
   else:
-    profile = {} # TODO: Pre-populate data here (default data)
+    profile = {} # TODO: Pre-populate data here if any? (default data)
   
-  return render_template("profile.html", profile=profile)
+  form = ProfileForm(data=profile)
+  return render_template("profile.html", form=form)
   
   
 @app.route("/profile", methods=['POST'])
 @role_required("seeker")
-def create_or_update_profile():
-  user_id = session.get("user_id")
-  
-  profile_data = {
-    "name": request.form.get("name"),
-    "description": request.form.get("description"),
-    "birthdate": request.form.get("birthdate"),
-    "gender": request.form.get("gender"),
-    "occupation": request.form.get("occupation"),
-    "image": request.form.get("image")
-  }
-  
-  response = requests.put(f"{PROFILE_API}/profiles/{user_id}", json=profile_data)
-  
-  if response.ok:
-    flash("Profile saved!", "success")
-    return redirect(url_for("profile"))
-  else:
-    flash("Error saving profile", "error")
-    # Reload site with profile data so user can just press save again without losing changes
-    return render_template("profile.html", profile=profile_data)
-    
-  
-
-
-
-# CONTEXT PROCESSOR -------------------------------
-#TODO Måske noget vi kan bruge til ALTID at gøre hvorvidt brugeren er authenticated og deres rolle tilgængelige i ALLE templates:
-  # -> minder på den måde om "current_user" i flask-login
-@app.context_processor
-def inject_user():
+def create_or_update_profile(): #TODO: Cleanup return statements
   """
-  Makes user info available to alle templates automatically
+  Send a PUT request to profile microservice to replace
+  profile info with the newly submitted information.
 
   Returns:
-      dict: is_authenticated bool and user's role.
+      Response | str: The profile page #TODO: redirect er jo måske lidt ligegyldig?
   """
-  return dict(
-    is_authenticated = session.get("session_token") is not None,
-    role = session.get("role")
-  )
+  user_id = session.get("user_id")  # Safe because we @role_required ensures user is authenticated
+  form = ProfileForm(request.form)
+  
+  if form.validate():
+    profile_data = {
+      "name": form.name.data,
+      "description": form.description.data,
+      "birthdate": (form.birthdate.data.isoformat() if form.birthdate.data else None),
+      "gender": form.gender.data,
+      "occupation": form.occupation.data,
+      "image": form.image.data
+    }
+  
+    response = requests.put(f"{PROFILE_API}/profiles/{user_id}", json=profile_data)
+  
+    if response.ok:
+      flash("Profile saved!", "success")
+      return redirect(url_for("profile"))
+    else:
+      flash("Error saving profile", "error")
+      # Reload site with profile data so user can just press save again without losing changes
+      return render_template("profile.html", form=form)
+  else:
+    flash("Invalid input", "error")
+    return render_template("profile.html", form=form)
+

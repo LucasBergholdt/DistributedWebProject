@@ -2,7 +2,7 @@ FROM python:3.11-slim
 
 WORKDIR /app
 
-# Copy everything in collectives folder
+# Copy everything in frontend folder
 COPY . .
 
 # Install dependencies
@@ -15,4 +15,3 @@ ENV FLASK_RUN_PORT=5000
 
 # Run Flask
 CMD ["flask", "run"]
-

@@ -1,9 +1,77 @@
 {% extends 'base.html' %}
 
 {% block body%}
-  <h1>Sign In</h1>
+<!-- <h1>Sign In</h1> -->
 
-  <form method="post">
+<div class="b-example-divider"></div>
+<div class="container col-xl-10 col-xxl-8 px-4 py-5">
+  <div class="row align-items-center g-lg-5 py-5">
+    <div class="col-lg-7 text-center text-lg-start">
+      <h1 class="display-4 fw-bold lh-1 text-body-emphasis mb-3">
+        Join a Collective. Save money, make friends.
+      </h1>
+      <p class="col-lg-10 fs-4">
+        Kollektivportalen is created to help seekers of collectives match with providers of collectives.
+      </p>
+    </div>
+    <div class="col-md-10 mx-auto col-lg-5">
+      <!-- <form method="post"> -->
+      <form class="p-4 p-md-5 border rounded-3 bg-body-tertiary" form method="post">
+        <h2>Sign in</h2>
+        <div class="form-floating mb-3">
+          {{ form.email }}
+          <!-- <input
+                  type="email"
+                  class="form-control"
+                  id="floatingInput"
+                  placeholder="name@example.com"
+                />
+                <label for="floatingInput">Email address</label> -->
+        </div>
+        <div class="form-floating mb-3">
+
+          {{ form.password }}
+          <!-- <input
+                  type="password"
+                  class="form-control"
+                  id="floatingPassword"
+                  placeholder="Password"
+                /> -->
+          <!-- <label for="floatingPassword">Password</label> -->
+          <!-- </div> -->
+          <!-- <div class="checkbox mb-3"> -->
+          <!-- <label>
+                  <input type="checkbox" value="remember-me" /> Remember me
+                </label> -->
+          <!-- </div> -->
+        </div>
+        <div>
+          <button class="w-100 btn btn-lg btn-primary" type="submit">
+                Log in
+          </button>
+        </div>
+      </form>
+    </div>
+
+    <!-- Sørg for billedet loader bedre - kan huske vi havde om  -->
+    <!-- Tror heller ikke billedet opfører sig, som jeg regner med. -->
+    <img class="img-circle" src="{{ url_for('static', filename='img/high-angle-shot-cityscape-with-lot-buildings-frankfurt-germany.jpg') }}" 
+      alt="Circled image of Frankfurt city."
+      width="25%">
+  </div>  
+
+  <!-- Denne i sin egen fil? -->
+  <footer class="container">
+        <div class="float-end"><a href="#">Back to top</a></div>
+        <div>© 2025 Kollektivportalen.dk · <a href="#">Privacy</a> · <a href="#">Terms</a></div>
+  </footer>
+
+
+</div>
+
+
+
+<!-- <form method="post">
     <div>
     {{ form.email.label }}
     {{ form.email }}
@@ -17,7 +85,6 @@
     {{ form.remember }}
     {{ form.submit }}
     </div>
-  </form>
+  </form> -->
 
-  <br>
 {% endblock body%}

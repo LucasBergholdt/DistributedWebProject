@@ -15,7 +15,7 @@
         {% for entry in collective_entries %}
         <!-- div of one collective-->
         <div class="container-s p-3 m-2 border"> 
-            <div class="container-fluid">{{ entry.image }}</div>
+            <div class="container-fluid"> <img src="{{entry.image}}"></div>
             <p class="mb-1">Room is {{ entry.roomsize }} square meters.</p>
             <p class="mb-1">{{ entry.city }}, {{ entry.street }}</p>
             <p class="mb-0">{{ entry.price }} DKK</p>

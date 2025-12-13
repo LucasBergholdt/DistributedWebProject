@@ -59,9 +59,10 @@ class User(db.Model):
     Returns:
         User: The newly created user object.
     """
-    user = cls( email    = email.strip(),
-                password = bcrypt.generate_password_hash(password).decode('utf-8'),
-                role     = role)
+    user = cls( role     = role.strip(),
+                email    = email.strip(),
+                password = bcrypt.generate_password_hash(password).decode('utf-8')
+              )
     db.session.add(user)
     db.session.commit()
     return user

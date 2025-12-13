@@ -15,6 +15,7 @@ app.config['SECRET_KEY'] = "change-me" #TODO Få denne fra environment?
 # API URLs to microservices
 AUTH_API = os.getenv('AUTH_API_URL')
 COLLECTIVES_API = os.getenv('COLLECTIVES_API_URL')
+PROFILE_API = os.getenv('PROFILE_API_URL')
 
 # Forms -----------------------------------------------------------------------
 #TODO: Smid over i anden fil og import?
@@ -107,7 +108,10 @@ def dashboard(): #TODO: DON'T THINK THIS WILL EVER BE USED WITH NEW LANDING PAGE
     return redirect(url_for("my_collectives"))
   else:
     return redirect(url_for("home"))
-  
+
+
+
+# AUTH ROUTES ------------------------------------------------------------------ 
 
 @app.route("/login", methods=['POST', 'GET'])
 def login():
@@ -146,6 +150,7 @@ def login():
       ## Get json from auth service response
       data = response.json()
       # Set session coookie
+      session["user_id"] = data["user_id"]
       session["role"] = data["role"]
       session["session_token"] = data["session_token"]
       flash("Login successful!", "success")
@@ -180,6 +185,7 @@ def register():
     if response.status_code == 201:
       # Set up session cookie to log user in. QOL so users don't have to login right after registering
       data = response.json()
+      session["user_id"] = data["user_id"]
       session["role"] = data["role"]
       session["session_token"] = data["session_token"]
       flash("Registration successful", "success")
@@ -215,6 +221,47 @@ def logout_view():
 
 
 
+# PROFILE ROUTES ------------------------------------------------------------------ 
+@app.route("/profile", methods=['GET'])
+@role_required("seeker")  # Also ensures user is authenticated
+def profile():
+  user_id = session.get("user_id")
+  
+  response = requests.get(f"{PROFILE_API}/profiles/{user_id}")
+  
+  if response.ok:
+    profile = response.json()
+  else:
+    profile = {} # TODO: Pre-populate data here (default data)
+  
+  return render_template("profile.html", profile=profile)
+  
+  
+@app.route("/profile", methods=['POST'])
+@role_required("seeker")
+def create_or_update_profile():
+  user_id = session.get("user_id")
+  
+  profile_data = {
+    "name": request.form.get("name"),
+    "description": request.form.get("description"),
+    "birthdate": request.form.get("birthdate"),
+    "gender": request.form.get("gender"),
+    "occupation": request.form.get("occupation"),
+    "image": request.form.get("image")
+  }
+  
+  response = requests.put(f"{PROFILE_API}/profiles/{user_id}", json=profile_data)
+  
+  if response.ok:
+    flash("Profile saved!", "success")
+    return redirect(url_for("profile"))
+  else:
+    flash("Error saving profile", "error")
+    # Reload site with profile data so user can just press save again without losing changes
+    return render_template("profile.html", profile=profile_data)
+    
+  
 
 
 

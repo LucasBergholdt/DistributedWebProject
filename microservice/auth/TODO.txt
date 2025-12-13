@@ -7,3 +7,5 @@ Brugere får nu også skabt en session efter registrering. QOL feature så man i
 Forstår tanken med URL'er (REST) - Jeg synes måske action-based approach er mere intuitivt. Men beholder REST urls for nu - Lucas.
 
 Har ændret fra "api_token" til "session_token" -> føler ikke det vi har her er en API token er det?
+
+Check efter at http codes er rigtige

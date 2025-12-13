@@ -10,12 +10,10 @@ from wtforms.validators import DataRequired, Length, Email, EqualTo, InputRequir
 from werkzeug.utils import secure_filename
 import os
 
-# for Flask-WTF
+#flask_wtf
 from flask_wtf import FlaskForm
 from flask_wtf.file import FileField, FileRequired
 from werkzeug.utils import secure_filename
-
-
 
 app = Flask("Flask Session")
 
@@ -26,19 +24,16 @@ app.config['WTF_CSRF_ENABLED'] = False
 # Secret key for session management and security features
 app.config['SECRET_KEY'] = "change-me"
 
-
 # Configure app for images
 
-UPLOAD_FOLDER = '/instance/uploads/'
+UPLOAD_FOLDER = 'static/images'
 ALLOWED_EXTENSIONS = {'txt', 'pdf', 'png', 'jpg', 'jpeg', 'gif'}
 
 app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
 
-"""
 def allowed_file(filename):
     return '.' in filename and \
            filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS
-"""
 
 # Initialize SQLAlchemy and Bcrypt extensions
 db = SQLAlchemy(app)
@@ -424,7 +419,7 @@ class SeekerProfileForm(Form):
   submit = SubmitField('Register')
 
 
-class CollectiveForm(Form):
+class CollectiveForm(FlaskForm):
   #address = StringField('Address of collective', validators=[DataRequired(), Length(min=1, max=80, message='You cannot have less than 1 or more than 80 characters')])
   city = StringField('Name of city', validators=[DataRequired(), Length(min=1, max=80, message='You cannot have less than 1 or more than 80 characters')])
   street = StringField('Name of street', validators=[DataRequired(), Length(min=1, max=80, message='You cannot have less than 1 or more than 80 characters')])
@@ -433,7 +428,7 @@ class CollectiveForm(Form):
 
   price = IntegerField('Price in DKK', validators=[DataRequired()])
 
-  image = FileField('Image File')
+  image = FileField(validators=[FileRequired()])
 
   # idk what this for
   #def validate_image(form, field):
@@ -657,39 +652,15 @@ def provider():
 @login_required
 @provider_permission.require()
 def new_collective():
-  form = CollectiveForm(request.form)
-  
-  if request.method == 'POST' and form.validate():
-      flash(form.image.data)
+  form = CollectiveForm()
 
-
-      file = form.image.data   # <-- FileStorage object
-
-      filename = secure_filename(file.filename)   # ERROR. file.filename findes ikke.
-
-      filepath = os.path.join(app.config["UPLOAD_FOLDER"], filename)
-
-      file.save(filepath)
-
-
-      """
-      if not allowed_file(form.image.data):
-          flash('File not allowed.')
-          return redirect(request.url)  # TODO kender ikke denne
-      
-      filepath = os.path.join(app.config['UPLOAD_FOLDER'], str(form.image.data))
-      
-      #read image and write to folder
-      file = request.files[form.image.name]
-      file.save(filepath)
-      """
-
-      #image_data = request.files[form.image.name]
-      #open(filepath, 'w').write(image_data)
-      
-      #wtforms dokumentation
-      #image_data = request.FILES[form.image.name].read()
-      #open(filepath, 'w').write(image_data)
+  if form.validate_on_submit():
+      f = form.image.data
+      filename = secure_filename(f.filename)
+      filepath = os.path.join(
+          app.config['UPLOAD_FOLDER'], filename
+      )
+      f.save(filepath)
 
       Collective.create_collective(
           current_user.id, 
@@ -697,7 +668,7 @@ def new_collective():
           form.street.data,
           form.roomsize.data,
           form.price.data,
-          filepath
+          filename
           )
       return redirect(url_for("provider"))
   return render_template("new_collective.html", form=form)

@@ -220,7 +220,7 @@ def register():
                     "user_id": user.id,
                     "role": role,
                     "session_token": session.token
-                    }), 200
+                    }), 201
   
   
 @app.route("/sessions", methods=['POST'])
@@ -260,7 +260,7 @@ def login_authentication():
                     "user_id": user.id, 
                     "role": user.role,
                     "session_token": session.token
-                    }), 200
+                    }), 201
   else:
     # Invalid credentials:
     return jsonify({"error": "Invalid credentials"}), 401
@@ -294,7 +294,7 @@ def current_session():
       "role": user.role,
       "session_token": session.token,
       "created_at": session.created_at.isoformat()  #TODO: Currently not used
-    })
+    }), 200
 
 
 @app.route('/sessions', methods=['DELETE'])
@@ -315,4 +315,4 @@ def logout():
   db.session.delete(session)
   db.session.commit()
 
-  return jsonify({"message": "Logged out"}), 200
+  return jsonify({"message": "Logged out"}), 200  #TODO: Måske slet message og return 204 i stedet.

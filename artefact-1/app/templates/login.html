@@ -1,7 +1,25 @@
 {% extends 'base.html' %}
 
 {% block body%}
-<!-- <h1>Sign In</h1> -->
+
+<!-- <form method="post">
+    <div>
+    {{ form.email.label }}
+    {{ form.email }}
+    </div>
+    <div>
+    {{ form.password.label }}
+    {{ form.password }}
+    </div>
+    <div>
+    {{ form.remember.label }}
+    {{ form.remember }}
+    {{ form.submit }}
+    </div>
+  </form> -->
+
+
+<!-- Alternativ stil: -->
 
 <div class="b-example-divider"></div>
 <div class="container col-xl-10 col-xxl-8 px-4 py-5">
@@ -53,13 +71,6 @@
       </form>
     </div>
 
-    <!-- Sørg for billedet loader bedre - kan huske vi havde om  -->
-    <!-- Tror heller ikke billedet opfører sig, som jeg regner med. -->
-    <img class="img-circle" src="{{ url_for('static', filename='img/high-angle-shot-cityscape-with-lot-buildings-frankfurt-germany.jpg') }}" 
-      alt="Circled image of Frankfurt city."
-      width="25%">
-  </div>  
-
   <!-- Denne i sin egen fil? -->
   <footer class="container">
         <div class="float-end"><a href="#">Back to top</a></div>
@@ -68,23 +79,5 @@
 
 
 </div>
-
-
-
-<!-- <form method="post">
-    <div>
-    {{ form.email.label }}
-    {{ form.email }}
-    </div>
-    <div>
-    {{ form.password.label }}
-    {{ form.password }}
-    </div>
-    <div>
-    {{ form.remember.label }}
-    {{ form.remember }}
-    {{ form.submit }}
-    </div>
-  </form> -->
 
 {% endblock body%}

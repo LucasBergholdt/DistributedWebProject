@@ -497,7 +497,18 @@ def on_identity_loaded(sender, identity):
 
 #-------------------------- ROUTES -----------------------------------------------------------------------
 
-@app.route("/", methods=('GET','POST'))
+@app.route("/", methods=('GET', 'POST'))
+def landing():
+  """
+  Landing page for anonymous visitors (before signing up).
+  """
+  if current_user.is_authenticated:
+    flash('You are already logged in.','info')
+    role = User.get_by_id(current_user.get_id()).role   
+    return redirect(url_for(role))
+  return render_template("landingpage.html")
+
+@app.route("/login", methods=('GET','POST'))
 def login():
     """
     Main page:

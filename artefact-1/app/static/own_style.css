@@ -1,0 +1,7 @@
+.hero {
+    background: linear-gradient(rgba(0,0,0,0.6), rgba(0,0,0,0)), url("../static/img/friends_eating.jpg"); /* Linear gradient makes text readable. */
+    height: 100vh; /* Image cover the entire viewport of the user.*/
+    background-size: contain; /* Show the entire image */
+    background-position: center;
+    
+}

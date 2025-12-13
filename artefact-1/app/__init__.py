@@ -8,7 +8,8 @@ from flask_principal import Principal, Permission, RoleNeed, UserNeed, Identity,
 from wtforms import IntegerField, DateTimeField, DecimalField, FileField, Form, SubmitField, SelectField, StringField, EmailField, PasswordField, BooleanField, ValidationError
 from wtforms.validators import DataRequired, Length, Email, EqualTo, InputRequired
 
-app = Flask("Flask Session")
+app = Flask(__name__)
+app.config['TEMPLATES_AUTO_RELOAD'] = True # FOR DEBUGGING PURPOSE
 
 # Configure SQLAlchemy ORM to use SQLite database file 'flask.db'
 app.config['SQLALCHEMY_DATABASE_URI'] = "sqlite:///flask.db"

@@ -2,31 +2,57 @@
 
 {% block body%}
 
-<h2 class="my-4 mx-4">
-  Collectives looking for a new resident</a>
-</h2>
-<!-- TODO: Lav ALBUM -->
-<!-- TODO: Lav Filtering System med søgebar som på Landing Page. url_for('overview', city='København').-->
-      <!-- -->
-
-<!-- Search -->
- <form method="get" action="{{ url_for('overview') }}" >
-  <div class="input-group mb-3">
-    <input type="text" name="city" class="form-control" placeholder="Search for a city" aria-label="Search for a city" aria-describedby="searchbutton">
-    <button class="btn btn-outline-secondary" type="submit" id="searchbutton">Search</button>
+<section class="h-100 container">
+  <div class="container">
+    <!-- Header -->
+    <h1 class="display-4">
+    Collectives looking for a new resident</a>
+    </h1> 
+    <!-- Search -->
+    <form method="get" action="{{ url_for('overview') }}" >
+      <div class="input-group mb-3">
+        <input type="text" name="city" class="form-control" placeholder="Search for a city" aria-label="Search for a city" aria-describedby="searchbutton">
+        <button class="btn btn-outline-secondary" type="submit" id="searchbutton">Search</button>
+      </div>
+    </form>
   </div>
-</form>
 
-<div class="d-flex align-items-start flex-wrap p-3 bg-light">  <!-- TODO: align-items eller align-contents?-->
-  {% for entry in collective_entries %} <!-- Her gives evt. filtrerede queries.  -->
-  <!-- div of one collective-->
-  <div class="container-s p-3 m-2 border">
-    <div class="container-fluid"><img src="{{ url_for('static', filename='images/' ~ entry.image) }}"></div>
-    <p class="mb-1">Room is {{ entry.roomsize }} square meters.</p>
-    <p class="mb-1">{{ entry.city }}, {{ entry.street }}</p>
-    <p class="mb-0">{{ entry.price }} DKK</p>
+  <div class="d-flex align-items-start flex-wrap p-3 bg-light">
+    {% for entry in collective_entries %}
+    <div class="card mx-2" style="width: 18rem;">
+      <img class="card-img-top collectiveimage" src="{{ url_for('static', filename='images/' ~ entry.image) }}" alt="Image of a collective">
+      <div class="card-body">
+        <h5 class="card-title">{{ entry.street }}</h5>
+        <h6 class="card-subtitle mb-2 text-muted">{{ entry.city }}</h6>
+      </div>
+      <ul class="list-group list-group-flush">
+        <li class="list-group-item">{{ entry.roomsize }} square meters</li>
+        <li class="list-group-item">{{ entry.price }} DKK</li>
+      </ul>  
+      <div class="card-body">
+        <a href="#" class="card-link">Apply</a>
+      </div>
+    </div>
+    {% endfor %}
   </div>
-  {% endfor %}
-</div>
-
+</section>
 {% endblock body%}
+
+
+
+
+
+<!--
+      <div class="container-s p-0 m-2 border">
+        <div class="container-fluid m-0 p-0">
+          <img src="{{ url_for('static', filename='images/' ~ entry.image) }}" class="collectiveimage" alt="Image of a collective">
+        </div>
+        <div class="container-fluid p-2">
+          <p class="mb-1" >Room is {{ entry.roomsize }} square meters.</p>
+          <p class="mb-1">{{ entry.city }}, {{ entry.street }}</p>
+          <p class="mb-0">{{ entry.price }} DKK</p>
+        </div>
+      </div>
+    </div>
+</section>
+-->

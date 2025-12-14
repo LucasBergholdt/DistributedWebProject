@@ -5,11 +5,22 @@
 <h2 class="my-4 mx-4">
   Collectives looking for a new resident</a>
 </h2>
+<!-- TODO: Lav ALBUM -->
+<!-- TODO: Lav Filtering System med søgebar som på Landing Page. url_for('overview', city='København').-->
+      <!-- -->
+
+<!-- Search -->
+ <form method="get" action="{{ url_for('overview') }}" >
+  <div class="input-group mb-3">
+    <input type="text" name="city" class="form-control" placeholder="Search for a city" aria-label="Search for a city" aria-describedby="searchbutton">
+    <button class="btn btn-outline-secondary" type="submit" id="searchbutton">Search</button>
+  </div>
+</form>
 
 <div class="d-flex align-items-start flex-wrap p-3 bg-light">  <!-- TODO: align-items eller align-contents?-->
-  {% for entry in collective_entries %}
+  {% for entry in collective_entries %} <!-- Her gives evt. filtrerede queries.  -->
   <!-- div of one collective-->
-  <div class="container-s p-3 m-2 border"> 
+  <div class="container-s p-3 m-2 border">
     <div class="container-fluid"><img src="{{ url_for('static', filename='images/' ~ entry.image) }}"></div>
     <p class="mb-1">Room is {{ entry.roomsize }} square meters.</p>
     <p class="mb-1">{{ entry.city }}, {{ entry.street }}</p>

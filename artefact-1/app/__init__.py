@@ -1,12 +1,13 @@
 # Command-Line Execution: flask run --debug
+from datetime import date
 from flask import Flask, current_app, session, redirect, render_template, request, url_for, flash
 
 from flask_sqlalchemy import SQLAlchemy
 from flask_login import LoginManager, login_user, logout_user, login_required, current_user, UserMixin
 from flask_bcrypt import Bcrypt
 from flask_principal import Principal, Permission, RoleNeed, UserNeed, Identity, AnonymousIdentity, identity_changed, identity_loaded
-from wtforms import IntegerField, DateTimeField, DecimalField, FileField, Form, SubmitField, SelectField, StringField, EmailField, PasswordField, BooleanField, ValidationError
-from wtforms.validators import DataRequired, Length, Email, EqualTo, InputRequired
+from wtforms import DateField, IntegerField, DateTimeField, DecimalField, FileField, Form, RadioField, SubmitField, SelectField, StringField, EmailField, PasswordField, BooleanField, TextAreaField, ValidationError
+from wtforms.validators import DataRequired, Length, Email, EqualTo, InputRequired, Optional
 from werkzeug.utils import secure_filename
 import os
 
@@ -165,39 +166,18 @@ class User(UserMixin, db.Model):
     
 
 class SeekerProfile(db.Model):
-    """
-    User model representing a user in the application.
-    Inherits from both UserMixin and db.Model to integrate Flask-Login and SQLAlchemy.
-
-    UserMixin provides default implementations for the methods that Flask-Login
-    expects user objects to have:
-    - is_authenticated: Property that should return True if the user is authenticated.
-    - is_active: Property that should return True if the user is active.
-    - is_anonymous: Property that should return False for regular users.
-    - get_id(): Method that returns a unique identifier for the user as a string.
-
-    By inheriting from UserMixin, the User class automatically gets these methods,
-    making it compatible with Flask-Login's user management system.
-    """
 
     __tablename__ = 'seekerprofiles'
 
-    # Primary key - nødvendigt?
+    # Primary key
     id = db.Column(db.Integer, primary_key=True)
-
-    user_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False)
-
-    name = db.Column(db.String(80), nullable=False)
-
+    user_id = db.Column(db.Integer, db.ForeignKey('users.id'), unique=True, nullable=False)
+    name = db.Column(db.String(80), nullable=True)
     description = db.Column(db.String(500), nullable=True)
-
-    birthdate = db.Column(db.String(80), nullable=True)
-
+    birthdate = db.Column(db.Date, nullable=True)
     gender = db.Column(db.String(80), nullable=True)
-
     occupation = db.Column(db.String(80), nullable=True)
-
-    image = db.Column(db.String(500), nullable=True)
+    image = db.Column(db.String(500), nullable=True)    # TODO: fully support this
 
 
     #user = db.relationship("User", back_populates="seekerprofile")
@@ -205,31 +185,40 @@ class SeekerProfile(db.Model):
     #TODO: Mange felter bliver efterladt null. Lav evt ny side/viewfunction hvor user kan udfylde sine informationer.
     @classmethod
     def create_seekerprofile(cls, user_id, name, description, birthdate, gender, occupation, image):
-      """
-      Create a new user with the provided details.
+        """
+        Create a new seeker profile with the provided details.
 
-      Args:
-          name (str): The user's name.
-          email (str): The user's email.
-          password (str): The user's password, which will be hashed before storage.
+        Args:
+            user_id (int): User's id
+            name (str): User's name
+            description (str): A description of the user
+            birthdate (Date): User's date of birth
+            gender (str): User's gender
+            occupation (str): User's occupation
+            image (str): User's profile picture
 
-      Returns:
-          User: The newly created user object.
-      """
+        Returns:
+            SeekerProfile: The newly created profile object
+        """
+        print("DEBUG: Entered create_seekerprofile")
+        if birthdate:
+            birthdate = (date.fromisoformat(birthdate))
+        #TODO Har fjernet .strip() fordi felterne godt kan være None. Men vi skal nok stadig have strip funktionalitet.
+        seekerprofile = cls(
+                            user_id = user_id,
+                            name = name,
+                            description = description,
+                            birthdate = birthdate,
+                            gender = gender,
+                            occupation = occupation,
+                            image = image
+                            )
+        db.session.add(seekerprofile)
+        print("DEBUG: About to commit new profile")
+        db.session.commit()
+        print("DEBUG: Commit succesful")
+        return seekerprofile
       
-      seekerprofile = cls( 
-                  user_id = user_id,
-                  name = name.strip(),
-                  description = description.strip(),
-                  birthdate = birthdate.strip(),
-                  gender = gender.strip(),
-                  occupation = occupation.strip(),
-                  image = image
-                )
-                  # evt også image.
-      db.session.add(seekerprofile)
-      db.session.commit()
-      return seekerprofile
       
 class Collective(db.Model):
     __tablename__ = 'collectives'
@@ -401,14 +390,14 @@ class RegistrationForm(Form):
   submit = SubmitField('Register')
 
 
-class SeekerProfileForm(FlaskForm):
-  name = StringField('Name', validators=[DataRequired(), Length(min=1, max=80, message='You cannot have less than 1 or more than 80 characters')])
-  description = StringField('Describe yourself', validators=[DataRequired(), Length(min=1, max=80, message='You cannot have less than 1 or more than 80 characters')])
-  birthdate = StringField('Birthdate', validators=[DataRequired(), Length(min=1, max=80, message='You cannot have less than 1 or more than 80 characters')])
-  gender = StringField('Gender', validators=[DataRequired(), Length(min=1, max=80, message='You cannot have less than 1 or more than 80 characters')])
-  occupation = StringField('Occupation', validators=[DataRequired(), Length(min=1, max=80, message='You cannot have less than 1 or more than 80 characters')])
+class ProfileForm(FlaskForm):
+  name = StringField('Name', validators=[Optional(), Length(min=1, max=80, message='You cannot have less than 1 or more than 80 characters')])
+  description = TextAreaField('About you', validators=[Optional(), Length(max=500, message='You cannot have more than 500 characters')])
+  birthdate = DateField('Birthdate', format="%Y-%m-%d", validators=[Optional()])
+  gender = RadioField('Gender', choices=[('male', 'Male'), ('female', 'Female'), ('other', 'Other')], validators=[Optional()])
+  occupation = StringField('Occupation', validators=[Optional(), Length(min=1, max=80, message='You cannot have less than 1 or more than 80 characters')])
   image = FileField(validators=[FileRequired()])
-  submit = SubmitField('Register')
+  submit = SubmitField('Save Profile')
 
 
 class CollectiveForm(FlaskForm):
@@ -630,11 +619,12 @@ def overview():
     return render_template("overview.html", collective_entries=collective_entries)
 
 
+#! TODO: NEEDS OVERHAUL.
 @app.route("/seekerprofile",methods=["GET","POST"])
 @login_required
 @seeker_permission.require()
 def seekerprofile():
-    form = SeekerProfileForm(request.form)
+    form = ProfileForm(request.form)
 
     if form.validate_on_submit():
       f = form.image.data

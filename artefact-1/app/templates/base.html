@@ -3,7 +3,6 @@
 <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.0.2/dist/css/bootstrap.min.css" rel="stylesheet"
   integrity="sha384-EVSTQN3/azprG1Anm3QDgpJLIm9Nao0Yz1ztcQTwFspd3yD65VohhpuuCOmLASjC" crossorigin="anonymous">
 
-<<<<<<< HEAD
 
 <!-- Latest compiled and minified CSS (gammelt):-->
 <!--
@@ -15,87 +14,24 @@
 
 
 
-
-=======
->>>>>>> 3656858 (collectiveside lidt flottere)
 <head>
-  <title>Flask Session</title>
+  <title>Kollektivportalen</title>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <!-- vores egen css -->
   <link rel="stylesheet" href="../static/own_style.css" />
 </head>
 
-<!-- Becomes vertical on small machines -->
-<nav class="navbar sticky-top navbar-expand-sm navbar-dark bg-primary">
-  <!-- #TODO: sticky-top=? -->
-  <!-- navbar-dark: white text. -->
-  <!-- bg-primary: blue background color to navbar. -->
-
-  <div class="container-fluid">
-    <!-- Links -->
-    <a class="navbar-brand" href="{{ url_for('landing') }}">Kollektivportalen</a> <!-- -->
-
-    <!-- Nedenstående gør, vores menu tilpasser sig smalle viewports!  -->
-    <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarSupportedContent"
-      aria-controls="navbarSupportedContent" aria-expanded="false" aria-label="Toggle navigation">
-      <span class="navbar-toggler-icon"></span>
-    </button>
-
-    <div class="collapse navbar-collapse" id="navbarSupportedContent">
-
-      <ul class="navbar-nav">         <!-- Left is default -->
-        <li class="nav-item">
-          <a class="nav-link" href="{{ url_for('overview') }}">Overview of all collectives</a>
-        </li>
-        {% if current_user.role == "seeker" %}
-        <li class="nav-item">
-          <a class="nav-link link-light" href="{{ url_for('seekerprofile')}}">Your Profile</a>
-        </li>
-        {% endif %}
-        {% if current_user.role == "provider" %}
-        <li class="nav-item">
-          <a class="nav-link link-light" href="{{ url_for('new_collective') }}">Create new collective</a>
-        </li>
-        {% endif %}
-      </ul>
-
-      <ul class="navbar-nav ms-auto">   <!-- Pushes to the right.-->
-        {% if current_user.is_authenticated %}
-        
-          <!-- Overvej om vi ønsker dette, kan bare fjernes: -->
-        <li class="nav-item">
-          <span class="nav-link disabled text-light">
-            Logged in
-        </span>      
-        <!-- {{current_user.name}}, {{current_user.role}} -->
-        </li>
-        <li class="nav-item">
-          <a class="nav-link link-light" href="{{ url_for('logout')}}">Log out</a>
-        </li>
-        {% else %}
-        <li class="nav-item">
-          <a class="nav-link link-light" href="{{ url_for('login') }}">Login</a>
-        </li>
-        <li class="nav-item">
-          <a class="nav-link link-light" href="{{ url_for('register') }}">Register</a>
-        </li>
-      </ul>
-      {% endif %}
-      </ul>
-    </div>
-  </div>
-  </div>
-</nav>
-
 <body>
+  {% include 'navbar.html' %}
   {%- set messages = get_flashed_messages(with_categories=true) -%}
   {%- if messages -%}
   {%- for category,message in messages %}
   <p><strong>{{ category }}</strong> {{ message }}</p>
   {% endfor -%}
   {%- endif -%}
-  {% block body %}{% endblock %}
+  {% block body %}
+  {% endblock %}
 </body>
 
 </html>

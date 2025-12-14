@@ -20,8 +20,12 @@
             {{ form.birthdate }}
         </div>
         <div>
-            {{ form.gender.label }}
-            {{ form.gender }}
+            {% for subfield in form.gender %}
+                <tr>
+                    <td>{{ subfield }}</td>
+                    <td>{{ subfield.label }}</td>
+                </tr>
+            {% endfor %}
         </div>
         <div>
             {{ form.occupation.label }}

@@ -369,15 +369,11 @@ def create_default_userbase():
 
 # Debug Purposes
 def create_default_collectives_applications():
-  Collective.create_collective(2, "Odense", "Vindegade", 50, 5000, "An image!") #submitterID = 2. provider@gmail.com.
-  Collective.create_collective(2, "Odense", "Vindegade", 50, 5000, "An image!") #submitterID = 2. provider@gmail.com.
-  Collective.create_collective(2, "Odense", "Vindegade", 50, 5000, "An image!") #submitterID = 2. provider@gmail.com.
-  Collective.create_collective(2, "Odense", "Vindegade", 50, 5000, "An image!") #submitterID = 2. provider@gmail.com.
-  Collective.create_collective(2, "Odense", "Vindegade", 50, 5000, "An image!") #submitterID = 2. provider@gmail.com.
-  Collective.create_collective(2, "Odense", "Vindegade", 50, 5000, "An image!") #submitterID = 2. provider@gmail.com.
-  Collective.create_collective(2, "Odense", "Vindegade", 50, 5000, "An image!") #submitterID = 2. provider@gmail.com.
-  
-  Application.create_application(1, 1, "Jeg hedder Alice og vil gerne søge ind på kollektivet på Skovbogade.")
+  Collective.create_collective(2, "Odense C", "Vindegade", 50, 2569, "1.jpg") #submitterID = 2. provider@gmail.com.
+  Collective.create_collective(2, "Odense M", "Bogense", 23, 5000, "2.jpg") #submitterID = 2. provider@gmail.com.
+  Collective.create_collective(2, "Odense M", "Stige", 35, 4000, "3.jpg") #submitterID = 2. provider@gmail.com.
+
+  # Application.create_application(1, 1, "Jeg hedder Alice og vil gerne søge ind på kollektivet på Skovbogade.")
 
 
 
@@ -416,7 +412,7 @@ class SeekerProfileForm(Form):
   birthdate = StringField('Birthdate', validators=[DataRequired(), Length(min=1, max=80, message='You cannot have less than 1 or more than 80 characters')])
   gender = StringField('Gender', validators=[DataRequired(), Length(min=1, max=80, message='You cannot have less than 1 or more than 80 characters')])
   occupation = StringField('Occupation', validators=[DataRequired(), Length(min=1, max=80, message='You cannot have less than 1 or more than 80 characters')])
-  image = StringField('Image', validators=[DataRequired(), Length(min=1, max=80, message='You cannot have less than 1 or more than 80 characters')])
+  image = FileField(validators=[FileRequired()])
   submit = SubmitField('Register')
 
 
@@ -430,11 +426,6 @@ class CollectiveForm(FlaskForm):
   price = IntegerField('Price in DKK', validators=[DataRequired()])
 
   image = FileField(validators=[FileRequired()])
-
-  # idk what this for
-  #def validate_image(form, field):
-   #   if field.data:
-    #      field.data = re.sub(r'[^a-z0-9_.-]', '_', field.data)
 
   submit = SubmitField('Register your collective')
 
@@ -648,7 +639,14 @@ def overview():
 def seekerprofile():
     form = SeekerProfileForm(request.form)
 
-    if request.method == 'POST' and form.validate():
+    if form.validate_on_submit():
+      f = form.image.data
+      filename = secure_filename(f.filename)
+      filepath = os.path.join(
+          app.config['UPLOAD_FOLDER'], filename
+      )
+      f.save(filepath)
+
       SeekerProfile.create_seekerprofile(
           current_user.id, 
           form.name.data,
@@ -656,11 +654,10 @@ def seekerprofile():
           form.birthdate.data,
           form.gender.data,
           form.occupation.data,
-          form.image.data
+          filename
           )
       return redirect(url_for("seeker"))
     return render_template("seekerprofile.html", form=form)
-
 
 # ------------------------- Provider Routes ---------------------------------
 @app.route("/provider",methods=["GET","POST"])

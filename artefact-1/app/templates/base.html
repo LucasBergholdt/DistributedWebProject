@@ -38,41 +38,40 @@
     </button>
 
     <div class="collapse navbar-collapse" id="navbarSupportedContent">
-      <div class="d-flex w-100">
-        <ul class="nav ms-auto mb-2 mb-lg-0">
-          <!-- navbar-nav me-auto mb-2 mb-lg-0 -->
-          <!-- ved ikke hvad aria-current er
-        <li class="nav-item">
-          <a class="nav-link active" aria-current="page" href="#">Home</a>
-        </li>
-        -->
 
-          {% if current_user.is_authenticated %}
-          <li class="nav-item link-light">
-            <a class="nav-link" href="{{ url_for('logout')}}">Log out</a>
-          </li>
-          {% if current_user.role == "seeker" %}
-          <li class="nav-item link-light">
-            <a class="nav-link" href="{{ url_for('seekerprofile')}}">Your Profile</a>
-          </li>
-          {% else %}
-          <li class="nav-item link-light">
-            <a class="nav-link" href="{{ url_for('new_collective') }}">Create new collective</a>
-          </li>
-          {% endif %}
-          {% else %}
-          <ul class="nav justify-content-end w-100"> <!-- Pushes to the right.-->
-            <li class="nav-item">
-              <a class="nav-link link-light" href="{{ url_for('login') }}">Login</a>
-            </li>
-            <li class="nav-item">
-              <a class="nav-link link-light" href="{{ url_for('register') }}">Register</a>
-            </li>
-          </ul>
-          {% endif %}
-        </ul>
-      </div>
+      <ul class="navbar-nav">         <!-- Left is default -->
+        <li class="nav-item">
+          <a class="nav-link" href="{{ url_for('overview') }}">Overview of all collectives</a>
+        </li>
+        {% if current_user.role == "seeker" %}
+        <li class="nav-item">
+          <a class="nav-link link-light" href="{{ url_for('seekerprofile')}}">Your Profile</a>
+        </li>
+        {% endif %}
+        {% if current_user.role == "provider" %}
+        <li class="nav-item">
+          <a class="nav-link link-light" href="{{ url_for('new_collective') }}">Create new collective</a>
+        </li>
+        {% endif %}
+      </ul>
+
+      <ul class="navbar-nav ms-auto">   <!-- Pushes to the right.-->
+        {% if current_user.is_authenticated %}
+        <li class="nav-item">
+          <a class="nav-link link-" href="{{ url_for('logout')}}">Log out</a>
+        </li>
+        {% else %}
+        <li class="nav-item">
+          <a class="nav-link link-light" href="{{ url_for('login') }}">Login</a>
+        </li>
+        <li class="nav-item">
+          <a class="nav-link link-light" href="{{ url_for('register') }}">Register</a>
+        </li>
+      </ul>
+      {% endif %}
+      </ul>
     </div>
+  </div>
   </div>
 </nav>
 

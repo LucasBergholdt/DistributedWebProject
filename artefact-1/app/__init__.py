@@ -500,12 +500,25 @@ def on_identity_loaded(sender, identity):
 @app.route("/", methods=('GET', 'POST'))
 def landing():
   """
-  Landing page for anonymous visitors (before signing up).
+  TO MULIGE DESIGN:
+  1. ALLE, ANONYME OG BRUGERE, FØRES HERTIL
+  2. KUN ANONYME BRUGERE FØRES HERTIL
+  HVAD SYNES I?
+
+  Landing page for  visitorS.
   """
-  if current_user.is_authenticated:
-    flash('You are already logged in.','info')
-    role = User.get_by_id(current_user.get_id()).role   
-    return redirect(url_for(role))
+
+  ## Løsning 1: LOgget ind brugere kan ikke tilgå landing? 
+  # if current_user.is_authenticated:
+  #   # flash('You are already logged in.','info')
+  #   role = User.get_by_id(current_user.get_id()).role   
+  #   if role == "provider":
+  #      return redirect(url_for("provider"))
+  #   else: 
+  #     return redirect(url_for("overview"))
+
+# løsning 2: alle brugere kan altid komme til landing. (LIGE NU)
+
   return render_template("landingpage.html")
 
 @app.route("/login", methods=('GET','POST'))
@@ -518,9 +531,9 @@ def login():
     - On failed login, flashes an error message and redisplays the login form.
     """
     if current_user.is_authenticated:
-          flash('You are already logged in.','info')
-          role = User.get_by_id(current_user.get_id()).role   
-          return redirect(url_for(role))
+      flash('You are already logged in.','info')
+          # role = User.get_by_id(current_user.get_id()).role
+      return redirect(url_for("overview"))
     else:
         form = LoginForm(request.form)
         if request.method == 'POST' and form.validate():
@@ -533,7 +546,7 @@ def login():
                 identity_changed.send(current_app._get_current_object(), identity=Identity(user.id))
 
                 # Redirect to proper role.
-                return redirect(url_for(user.role))
+                return redirect(url_for("landing"))
             else:
                 # Otherwise, display an error message and display the login form again
                 flash("Invalid credentials","error")
@@ -598,29 +611,35 @@ Providers:
       - Uploads database and redirects to /provider.
 """
 
-
+## GAMMMEL "SEEKER" TILGANG
 # @app.route("/seeker",methods=["GET","POST"])  #TODO: Fjern POST? Bruges ikke.
 # @login_required
 # @seeker_permission.require()
-@app.route("/home",methods=["GET"])
-def home():
-  if not (current_user.is_authenticated):
-     return redirect(url_for("login"))
-  elif (current_user.role == "seeker"): 
-     return redirect(url_for("seeker"))
-  else:
-     return redirect(url_for("provider"))
+# @app.route("/home",methods=["GET"])
+# def home():
+#   if not (current_user.is_authenticated):
+#      return redirect(url_for("login"))
+#   elif (current_user.role == "seeker"): 
+#      return redirect(url_for("seeker"))
+#   else:
+#      return redirect(url_for("provider"))
 
 
 # ------------------------- Seeker Routes ---------------------------------
-@app.route("/seeker",methods=["GET","POST"])  #TODO: Fjern POST? Bruges ikke.
-@login_required
-@seeker_permission.require()
-def seeker():
+@app.route("/overview")  #TODO: Fjern POST? Bruges ikke.
+# @login_required
+# @seeker_permission.require()
+def overview():
     collective_entries = Collective.get_all()
-    your_applications = current_user.applications
-    #Collective.get_by_submitter(current_user.id)
-    return render_template("seeker.html", collective_entries=collective_entries, your_applications=your_applications)
+
+    # TODO: HVIS LOGGET IND --- implementer yderligere!!
+    # E.G ABILITY TO APPLY BASED ON ROLE
+
+     #  your_applications = current_user.applications
+      # Collective.get_by_submitter(current_user.id)
+      # som argument: your_applications=your_applications
+
+    return render_template("overview.html", collective_entries=collective_entries)
 
 
 @app.route("/seekerprofile",methods=["GET","POST"])  #TODO: Fjern POST? Bruges ikke.

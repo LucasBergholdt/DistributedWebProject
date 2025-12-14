@@ -123,15 +123,6 @@ class User(UserMixin, db.Model):
       db.session.commit()
       return user
 
-      """ Brug til senere
-                        description = description.strip(),
-                  birthdate = birthdate.strip(),
-                  gender = gender.strip(),
-                  occupation = occupation.strip()
-      
-      
-      """
-
     @staticmethod
     def get_by_id(id):
       """
@@ -273,6 +264,10 @@ class Collective(db.Model):
         """Get all Collectives submitted by a specific user"""
         return Collective.query.filter_by(submitter_id=user_id).all()
     
+    def get_by_city(city):
+        """Get all Collectives which cityname has given argument as prefix)"""
+        return Collective.query.filter(Collective.city.startswith(city)).all()
+    
     @classmethod
     def create_collective(cls, submitter_id, city, street, roomsize, price, image):
       """
@@ -406,7 +401,7 @@ class RegistrationForm(Form):
   submit = SubmitField('Register')
 
 
-class SeekerProfileForm(Form):
+class SeekerProfileForm(FlaskForm):
   name = StringField('Name', validators=[DataRequired(), Length(min=1, max=80, message='You cannot have less than 1 or more than 80 characters')])
   description = StringField('Describe yourself', validators=[DataRequired(), Length(min=1, max=80, message='You cannot have less than 1 or more than 80 characters')])
   birthdate = StringField('Birthdate', validators=[DataRequired(), Length(min=1, max=80, message='You cannot have less than 1 or more than 80 characters')])
@@ -617,11 +612,13 @@ Providers:
 
 
 # ------------------------- Seeker Routes ---------------------------------
-@app.route("/overview")  #TODO: Fjern POST? Bruges ikke.
-# @login_required
-# @seeker_permission.require()
+@app.route("/overview", methods=["GET","POST"])
 def overview():
-    collective_entries = Collective.get_all()
+    city = request.args.get("city", type=str)
+    if city is not None:
+        collective_entries = Collective.get_by_city(city) # returner alle som starter med dette city-navn.
+    else:
+       collective_entries = Collective.get_all()
 
     # TODO: HVIS LOGGET IND --- implementer yderligere!!
     # E.G ABILITY TO APPLY BASED ON ROLE
@@ -629,11 +626,11 @@ def overview():
      #  your_applications = current_user.applications
       # Collective.get_by_submitter(current_user.id)
       # som argument: your_applications=your_applications
-
+      
     return render_template("overview.html", collective_entries=collective_entries)
 
 
-@app.route("/seekerprofile",methods=["GET","POST"])  #TODO: Fjern POST? Bruges ikke.
+@app.route("/seekerprofile",methods=["GET","POST"])
 @login_required
 @seeker_permission.require()
 def seekerprofile():

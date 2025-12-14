@@ -1,28 +1,49 @@
 {% extends 'base.html' %}
 
 {% block body%}
+<section class="h-100 container">
+  <div class="container"> <!-- Header + Button -->
+     <div class="row mb-3 mt-5">
+        <div class="col-6">
+            <h1 class="display-4">
+                Your Collectives</a>
+            </h1>
+        </div>
+        {% if collective_entries %}
+         <div class="col-6 d-flex align-items-center justify-content-end">
+            <a class="btn btn-primary btn-lg" href="#" role="button">Add +</a>
+        </div>
+        {% endif %}
+     </div>
+  </div>
 
-<div class="container-fluid">
-    <h2 class="my-4 mx-4">
-      Collectives that you have submitted
-    </h2>
-    {% if not collective_entries %}
+  <!-- Body -->
+   {% if not collective_entries %}
     <div class="container-fluid">
-        You haven't submitted any collectives. Submit a new collective <a href="{{ url_for('new_collective') }}">here</a>
+        <p class="lead">You haven't submitted any collectives. Submit a new collective <a href="{{ url_for('new_collective') }}">here</a></p>
     </div>
-    {% else %}
-    <div class="d-flex align-items-start flex-wrap p-3 bg-light">  <!-- TODO: align-items eller align-contents?-->
-        {% for entry in collective_entries %}
-        <!-- div of one collective-->
-        <div class="container-s p-3 m-2 border"> 
-            <div class="container-fluid"> <img src="{{ url_for('static', filename='images/' ~ entry.image) }}"></div>
-            <p class="mb-1">Room is {{ entry.roomsize }} square meters.</p>
-            <p class="mb-1">{{ entry.city }}, {{ entry.street }}</p>
-            <p class="mb-0">{{ entry.price }} DKK</p>
-        </div>    
-        {% endfor %}
+    {% else %} 
+  <div class="d-flex align-items-start flex-wrap p-3 bg-light">
+    {% for entry in collective_entries %}
+    <div class="card mx-2 my-2" style="width: 18rem;">
+      <img class="card-img-top collectiveimage" src="{{ url_for('static', filename='images/' ~ entry.image) }}" alt="Image of a collective">
+      <div class="card-body">
+        <h5 class="card-title">{{ entry.street }}</h5>
+        <h6 class="card-subtitle mb-2 text-muted">{{ entry.city }}</h6>
+      </div>
+      <ul class="list-group list-group-flush">
+        <li class="list-group-item">{{ entry.roomsize }} square meters</li>
+        <li class="list-group-item">{{ entry.price }} DKK</li>
+      </ul>  
+      <div class="card-body">
+        <a href="#" class="card-link">Edit</a>
+        <a href="#" class="card-link">Delete</a>
+        <a href="#" class="card-link">View Applications</a>
+      </div>
     </div>
-    {% endif %}
-</div>
+    {% endfor %}
+  </div>
+  {% endif %}
+</section>
 
 {% endblock body%}

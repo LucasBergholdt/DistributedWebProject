@@ -5,21 +5,23 @@
 <section class="h-100 container">
   <div class="container">
     <!-- Header -->
-    <h1 class="display-4">
+    <h1 class="display-4 mb-5 mt-5">
     Collectives looking for a new resident</a>
     </h1> 
     <!-- Search -->
-    <form method="get" action="{{ url_for('overview') }}" >
-      <div class="input-group mb-3">
-        <input type="text" name="city" class="form-control" placeholder="Search for a city" aria-label="Search for a city" aria-describedby="searchbutton">
-        <button class="btn btn-outline-secondary" type="submit" id="searchbutton">Search</button>
-      </div>
-    </form>
+    <div class="container mb-3 mx-0" style="width: 38rem;">
+      <form method="get" action="{{ url_for('overview') }}" >
+        <div class="input-group mb-3">
+          <input type="text" name="city" class="form-control" placeholder="Search for a city" aria-label="Search for a city" aria-describedby="searchbutton">
+          <button class="btn btn-outline-secondary" type="submit" id="searchbutton">Search</button>
+        </div>
+      </form>
+    </div>
   </div>
 
   <div class="d-flex align-items-start flex-wrap p-3 bg-light">
     {% for entry in collective_entries %}
-    <div class="card mx-2" style="width: 18rem;">
+    <div class="card mx-2 my-2" style="width: 18rem;">
       <img class="card-img-top collectiveimage" src="{{ url_for('static', filename='images/' ~ entry.image) }}" alt="Image of a collective">
       <div class="card-body">
         <h5 class="card-title">{{ entry.street }}</h5>
@@ -37,9 +39,6 @@
   </div>
 </section>
 {% endblock body%}
-
-
-
 
 
 <!--

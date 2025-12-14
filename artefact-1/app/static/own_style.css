@@ -1,8 +1,16 @@
 .hero {
-    background: linear-gradient(rgba(0,0,0,0.6), rgba(0,0,0,0)), url("../static/img/friends_eating.jpg"); /* Linear gradient makes text readable. */
+    background: linear-gradient(rgba(0,0,0,0.7), rgba(0,0,0,0)), url("../static/img/friends_eating.jpg"); /* Linear gradient makes text readable. */
     height: 100vh; /* Image cover the entire viewport of the user.*/
-    background-position: center;
-    background-size: cover;
-    background-repeat: no-repeat;
-    
+    background-position: center; 
+    background-size: cover; /* Making the image fully scaled, adapted to viewport, non-repeating. */
+    background-repeat: no-repeat;   
+    border-bottom-left-radius: 25px; /* Beautiful rounded corners */ 
+    border-bottom-right-radius: 25px; 
+}
+
+.overlap {
+  margin-top: -150px;
+  background-color: whitesmoke;
+  border-radius: 10px;
+  min-height: 500px;
 }

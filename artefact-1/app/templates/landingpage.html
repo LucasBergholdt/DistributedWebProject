@@ -19,11 +19,11 @@
                 <!-- Search -->
                     <div class="form-container mt-4">
                         <span class="form-badge bg-primary bg-opacity-10 text-primary"></span>
-                        <form>
+                        <form method="get" action="{{ url_for('overview') }}">
                             <div class="input-group mb-3 shadow-sm rounded-pill overflow-hidden">
-                                <input type="text" class="form-control border-0 py-3 px-4"
-                                    placeholder="Where do you want to live?" aria-label="Search term">
-                                <button class="btn btn-primary px-4 search-btn" type="button">
+                                <input type="text" name="city" class="form-control border-0 py-3 px-4"
+                                    placeholder="In which city do you want to live?" aria-label="Search for a city" aria-describedby="searchbutton">
+                                <button class="btn btn-primary px-4 search-btn" type="submit" id="searchbutton">
                                     <i class="bi bi-search animated-icon"></i>
                                 </button>
                             </div>

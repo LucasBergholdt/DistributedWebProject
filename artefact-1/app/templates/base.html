@@ -57,8 +57,16 @@
 
       <ul class="navbar-nav ms-auto">   <!-- Pushes to the right.-->
         {% if current_user.is_authenticated %}
+        
+          <!-- Overvej om vi ønsker dette, kan bare fjernes: -->
         <li class="nav-item">
-          <a class="nav-link link-" href="{{ url_for('logout')}}">Log out</a>
+          <span class="nav-link disabled text-light">
+            Logged in
+        </span>      
+        <!-- {{current_user.name}}, {{current_user.role}} -->
+        </li>
+        <li class="nav-item">
+          <a class="nav-link link-light" href="{{ url_for('logout')}}">Log out</a>
         </li>
         {% else %}
         <li class="nav-item">

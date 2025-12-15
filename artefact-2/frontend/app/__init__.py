@@ -2,9 +2,11 @@ from datetime import date
 from functools import wraps
 import os
 import requests
-from wtforms import DateField, Form, SelectField, StringField, SubmitField, EmailField, PasswordField, BooleanField, TextAreaField
+from wtforms import DateField, Form, RadioField, SelectField, StringField, SubmitField, EmailField, PasswordField, BooleanField, TextAreaField
 from wtforms.validators import DataRequired, Email, EqualTo, Optional, Length
 from flask import Flask, redirect, render_template, request, session, url_for, flash
+from flask_wtf import FlaskForm
+from flask_wtf.file import FileField, FileRequired
 
 app = Flask(__name__)
 
@@ -37,13 +39,13 @@ class LoginForm(Form):
   remember = BooleanField('Remember Me')
   submit = SubmitField('Login')
   
-class ProfileForm(Form): #TODO Afviger fra monolit form
-  name = StringField('Name', validators=[Optional(), Length(max=80)])
-  description = TextAreaField('About you', validators=[Optional(), Length(max=500)])
+class ProfileForm(FlaskForm):
+  name = StringField('Name', validators=[Optional(), Length(min=1, max=80, message='You cannot have less than 1 or more than 80 characters')])
+  description = TextAreaField('About you', validators=[Optional(), Length(max=500, message='You cannot have more than 500 characters')])
   birthdate = DateField('Birthdate', format="%Y-%m-%d", validators=[Optional()])
-  gender = StringField('Gender', validators=[Optional(), Length(max=80)])
-  occupation = StringField('Occupation', validators=[Optional(), Length(max=80)])
-  image = StringField('Profile Picture', validators=[Optional(), Length(max=500)])
+  gender = RadioField('Gender', choices=[('male', 'Male'), ('female', 'Female'), ('other', 'Other')], validators=[Optional()])
+  occupation = StringField('Occupation', validators=[Optional(), Length(min=1, max=80, message='You cannot have less than 1 or more than 80 characters')])
+  image = FileField("Profile picture", validators=[FileRequired()])
   submit = SubmitField('Save Profile')
 
 
@@ -81,7 +83,7 @@ def role_required(role_name):
       
       if user_role != role_name:
         flash(f"Access denied.", "error")
-        return redirect(url_for("home"))
+        return redirect(url_for("landing"))
       
       # User has required role
       return f(*args, **kwargs)
@@ -92,14 +94,17 @@ def role_required(role_name):
 # ROUTES ----------------------------------------------------------------------
 
 @app.route("/", methods=('GET','POST'))
-def home():
+def landing():
   """
   Landing page.
 
   Returns:
       str: Homepage template
   """
-  return render_template("homepage.html")
+  response = requests.get(f"{COLLECTIVES_API}/collectives")
+  selected_entries = response.json()[0:3]
+  
+  return render_template("landingpage.html", selected_entries=selected_entries)
 
 
 @app.route("/dashboard")
@@ -117,7 +122,7 @@ def dashboard(): #TODO: DON'T THINK THIS WILL EVER BE USED WITH NEW LANDING PAGE
   elif role == "provider":
     return redirect(url_for("my_collectives"))
   else:
-    return redirect(url_for("home"))
+    return redirect(url_for("landing"))
 
 
 
@@ -145,7 +150,7 @@ def login():
     # If it does user is already logged in
     if response.status_code == 200:
       flash("already logged in")
-      return redirect(url_for("home")) # TODO: Kan man lave noget nice hvor man redirectes tilbage til hvor man var inden man blev sendt til login
+      return redirect(url_for("landing")) # TODO: Kan man lave noget nice hvor man redirectes tilbage til hvor man var inden man blev sendt til login
   
   # ---- User does NOT have an active session, need to login ----
   form = LoginForm(request.form)
@@ -164,7 +169,7 @@ def login():
       session["role"] = data["role"]
       session["session_token"] = data["session_token"]
       flash("Login successful!", "success")
-      return redirect(url_for("home")) # TODO: Kan man lave noget nice hvor man redirectes tilbage til hvor man var inden man blev sendt til login
+      return redirect(url_for("landing")) # TODO: Kan man lave noget nice hvor man redirectes tilbage til hvor man var inden man blev sendt til login
     else:
       flash(response.json().get("error", "Login failed"), "error")
   
@@ -223,10 +228,10 @@ def logout_view():
     if response.ok:
       session.clear()
       flash("Session ended", "success")
-      return redirect(url_for("home"))
+      return redirect(url_for("landing"))
     
   flash("Logout failed", "error")
-  return redirect(url_for("home")) #TODO: Skal vi redirecte til home??
+  return redirect(url_for("landing")) #TODO: Skal vi redirecte til home??
 
 
 
@@ -293,3 +298,8 @@ def create_or_update_profile(): #TODO: Cleanup return statements
     flash("Invalid input", "error")
     return render_template("profile.html", form=form)
 
+
+# COLLECTIVE ROUTES ------------------------------------------------------------------
+@app.route("/overview", methods=["GET"])
+def overview():
+  pass

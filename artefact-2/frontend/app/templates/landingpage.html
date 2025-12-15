@@ -1,0 +1,80 @@
+{% extends 'base.html' %}
+
+{% block body%}
+
+<!-- TODO: Sørg for billede loader på en bedre måde, så vi ikke har 1 sek load -->
+
+<header class="hero">
+    <div class="container h-50"> <!-- Use 50% of parent height-->
+        <div class="row h-100 align-items-center"> <!-- use 100% of parent height -->
+            <div class="col-12 text-center"> <!-- span all 12 columns-->
+
+                <!-- Intro section-->
+                <h1 class="text-white font-weight-bold">Live together!</h1>
+                <p class="lead text-white mb-4">Kollektivportalen matches seekers of collectives with providers of
+                    collectives.</p>
+
+                <!-- Search -->
+                <div class="form-container mt-4">
+                    <span class="form-badge bg-primary bg-opacity-10 text-primary"></span>
+                    <form method="get" action="{{ url_for('overview') }}">
+                        <div class="input-group mb-3 shadow-sm rounded-pill overflow-hidden">
+                            <!-- ARIA: accessibility of search bar.-->
+                            <input type="text" name="city" class="form-control border-0 py-3 px-4"
+                                placeholder="In which city do you want to live?"
+                                aria-label="Search for a city to find collectives in" aria-describedby="searchbutton">
+                            <button class="btn btn-primary px-4 search-btn" type="submit" id="searchbutton">
+                                <i class="bi bi-search animated-icon">Search</i>
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+</header>
+<!-- main: main content of the page -->
+
+<main>
+    <div class="container mt-4"> <!--small container with custom overlap-->
+        <h3 class="text-center">Collectives looking for applicants today</h3>
+
+        <div class="d-flex flex-nowrap gap-3 justify-content-center">
+            <!-- Never wrap to next row -->
+            {% for entry in selected_entries %}
+            <div class="card my-2" style="width: 18rem;">
+                <a href="{{ url_for('collective_details', id=entry.id)}}"><img class="card-img-top collectiveimage"
+                        src="{{ url_for('static', filename='images/' ~ entry.image) }}" alt="Image of a collective"></a>
+                <div class="card-body">
+                    <h5 class="card-title">{{ entry.street }}</h5>
+                    <h6 class="card-subtitle mb-2 text-muted">{{ entry.city }}</h6>
+                </div>
+                <ul class="list-group list-group-flush">
+                    <li class="list-group-item">{{ entry.roomsize }} square meters</li>
+                    <li class="list-group-item">{{ entry.price }} DKK</li>
+                </ul>
+                <div class="card-body">
+                    <a href="#" class="card-link">Apply</a>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+
+    </div>
+    <div class="container mt-5"> <!--small container with custom overlap-->
+        <h1 class="display-6">What is a "Kollektiv"?</h1>
+        <p class="lead">Glad you asked! Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor
+            incididunt ut
+            labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris
+            nisi ut
+            aliquip ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse
+            cillum
+            dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident, sunt in culpa qui
+            officia
+            deserunt mollit anim id est laborum</p>
+    </div>
+
+
+</main>
+
+
+{% endblock body%}

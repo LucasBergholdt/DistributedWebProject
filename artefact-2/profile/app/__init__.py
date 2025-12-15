@@ -116,7 +116,7 @@ class SeekerProfile(db.Model):
         self.gender = gender
         self.occupation = occupation
         self.image = image
-        db.session.commit() #TODO: er dette nødvendigt?
+        db.session.commit()
         
         
 with app.app_context():
@@ -159,10 +159,7 @@ def put_profile(user_id):
         Response: JSON object with the new profile
     """
     # Get all the profile data from the request
-    print(f"DEBUG: PUT /profiles/{user_id} received")
     data = request.get_json()
-    print(f"DEBUG: Request data: {data}")
-    
     name = data.get("name")
     description = data.get("description")
     birthdate = data.get("birthdate")
@@ -179,15 +176,9 @@ def put_profile(user_id):
         status_code = 200
     else:
         # Create profile with provided information
-        print("DEBUG: Profile not found, calling create_seekerprofile")
         profile = SeekerProfile.create_seekerprofile(user_id, name, description, birthdate, gender, occupation, image)
-        print("DEBUG: Returned from create_seekerprofile")
         status_code = 201
     
-    print("DEBUG: Profile operation complete, about to jsonifuy response")
-    response = jsonify(profile.to_dict())
-    print("DEBUG: JSONification successful")
-    return response, status_code
     return jsonify(profile.to_dict()), status_code
 
 

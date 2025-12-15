@@ -746,7 +746,7 @@ def put_profile():
     else:
         # Reload site with the form data so user doesn't have to start all over if they input something invalid
         flash("Invalid input", "error")
-        return render_template("profile.html", form=form)
+        return render_template("seekerprofile.html", form=form)
 
 
 # ------------------------- Provider Routes ---------------------------------

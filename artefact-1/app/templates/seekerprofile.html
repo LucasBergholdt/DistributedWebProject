@@ -1,59 +1,97 @@
 {% extends 'base.html' %}
 
 {% block body%}
-<div class="d-flex align-items-start flex-wrap p-3 bg-light">
-<div class="container-fluid">
-    <h2 class="my-4 mx-4">
-  Your profile information
-    </h2>
-    <form method="post">
-        <div>
-            {{ form.name.label }}
-            {{ form.name }}
+<main class="container my-5">
+    <header>
+        <h1 class="pb-2 border-bottom">Your profile</h1>
+        <p class="text-muted">Filled out profiles typically stand out more for collectives.</p>
+    </header>
+    <section>
+        <form method="put" enctype="multipart/form-data">
+            {{ form.image.label(class="form-label d-block") }}
+            <!-- Clicking anywhere inside a label opens the associated form control (file chooser) -->
+            <label class="profile-image-wrapper"> <!-- profile-image-wrapper is custom css class. -->
+                {% if profile.image %}
+                    <img src="{{ url_for('static', filename='images/' ~ profile.image) }}"
+                        alt="Change profile picture"
+                        class="profile-image rounded-circle border">
+                {% else %}
+                    <img src="{{ url_for('static', filename='images/default-avatar.jpg') }}"
+                        alt="Change profile picture"
+                        class="profile-image rounded-circle border">
+                {% endif %}
+
+                {{ form.image(class="visually-hidden", accept="image/*", aria_describedby="imageHelp") }}
+            </label>
+            <div id="imageHelp" class="form-text mt-2">Click the picture to upload a new one.<br> 
+                We accept JPG, PNG or GIF.
+            </div>
+
+            <div class="card mt-4">
+                <div class="card-header">
+                    <h2 class="h5">Information</h2>
+                </div>
+                <ul class="list-group list-group-flush">
+                    <li class="list-group-item">
+                        <div class="mb-4">
+                            {{ form.name.label(class="form-label") }}
+                            {{ form.name (class="form-control", aria_describedby="nameHelp")}}
+                            <div id="nameHelp" class="form-text">
+                                Enter your full name.
+                            </div>
+                        </div>
+                        <div class="my-4">
+                            {{ form.birthdate.label(class="form-label") }}
+                            {{ form.birthdate(class="form-control") }}
+                        </div>
+                        <div class="my-4">
+                            {{ form.gender.label(class="form-label d-block") }}
+                            {% for subfield in form.gender %}
+                            <div class="form-check form-check-inline">
+                                {{ subfield(class="form-check-input") }}
+                                {{ subfield.label(class="form-check-label") }}
+                            </div>
+                            {% endfor %}
+                        </div>
+                        <div class="my-4">
+                            {{ form.occupation.label(class="form-label") }}
+                            {{ form.occupation(class="form-control") }}
+                        </div>
+                    </li>
+                    <li class="list-group-item">
+                        {{ form.description.label(class="form-label") }}
+                        <div id="descHelp" class="form-text">
+                            Tell us something about yourself, your hobbies, and what you're looking for in a collective.
+                        </div>
+                        {{ form.description(class="form-control", aria_describedby="descHelp") }}
+                        <div>
+                            <div class="my-4">
+                                {{ form.submit(class="btn-lg btn-primary") }}
+                            </div>
+                        </div>
+                    </li>
+                </ul>
+            </div>
+
+        </form>
+    </section>
+
+<!--     <section>
+        <div class="container-fluid">
+            <h2 class="my-4 mx-4">
+                Upcoming Feature: Collectives that you have applied for
+            </h2>
+            <div class="d-flex align-items-start flex-wrap p-3 bg-light">
+                {% for entry in collective_entries %}
+                <div class="container-s p-3 m-2 border">
+                    <div class="container-fluid">{{ entry.image }}</div>
+                    <p class="mb-1">Room is {{ entry.roomsize }} square meters.</p>
+                    <p class="mb-1">{{ entry.city }}, {{ entry.street }}</p>
+                    <p class="mb-0">{{ entry.price }} DKK</p>
+                </div>
+                {% endfor %}
+            </div>
         </div>
-        <div>
-            {{ form.description.label }}
-            {{ form.description }}
-        </div>
-        <div>
-            {{ form.birthdate.label }}
-            {{ form.birthdate }}
-        </div>
-        <div>
-            {% for subfield in form.gender %}
-                <tr>
-                    <td>{{ subfield }}</td>
-                    <td>{{ subfield.label }}</td>
-                </tr>
-            {% endfor %}
-        </div>
-        <div>
-            {{ form.occupation.label }}
-            {{ form.occupation }}
-        </div>
-        <div>
-            {{ form.image.label }}
-            {{ form.image }}
-        </div>
-        <div>
-            {{ form.submit }}
-        </div>
-    </form>
-</div>
-<div class="container-fluid">
-    <h2 class="my-4 mx-4">
-        Upcoming Feature: Collectives that you have applied for
-    </h2>
-    <div class="d-flex align-items-start flex-wrap p-3 bg-light">  <!-- TODO: align-items eller align-contents?-->
-        {% for entry in collective_entries %}
-        <!-- div of one collective-->
-        <div class="container-s p-3 m-2 border"> 
-            <div class="container-fluid">{{ entry.image }}</div>
-            <p class="mb-1">Room is {{ entry.roomsize }} square meters.</p>
-            <p class="mb-1">{{ entry.city }}, {{ entry.street }}</p>
-            <p class="mb-0">{{ entry.price }} DKK</p>
-        </div>
-        {% endfor %}
-    </div>
-</div>
+    </section> -->
+</main>
 {% endblock body%}

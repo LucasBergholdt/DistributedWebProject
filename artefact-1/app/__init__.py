@@ -1,5 +1,6 @@
 # Command-Line Execution: flask run --debug
 from datetime import date
+import uuid
 from flask import Flask, current_app, session, redirect, render_template, request, url_for, flash
 
 from flask_sqlalchemy import SQLAlchemy
@@ -720,7 +721,7 @@ def profile():
     
     form = ProfileForm(obj=profile)
     
-    return render_template("seekerprofile.html", form=form)
+    return render_template("seekerprofile.html", form=form, profile=profile)
   
   
 @app.route("/profile",methods=["PUT"])

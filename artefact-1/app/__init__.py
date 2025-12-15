@@ -557,7 +557,7 @@ def on_identity_loaded(sender, identity):
 
 #-------------------------- ROUTES -----------------------------------------------------------------------
 
-@app.route("/", methods=('GET'))
+@app.route("/", methods=['GET'])
 def landing():
   """
   Landing page for all visitors. 

@@ -1,5 +1,7 @@
 .hero {
-    background: linear-gradient(rgba(0,0,0,0.7), rgba(0,0,0,0)), url("../static/img/friends_eating.jpg"); /* Linear gradient makes text readable. */
+  /* Overvej at fikse loading times for billedet? */
+  /* Background image er "purely decorative, derfor placeret i CSS*/  
+  background: linear-gradient(rgba(0,0,0,0.7), rgba(0,0,0,0)), url("../static/img/friends_eating_v2.jpg"); /* Linear gradient makes text readable. */
     height: 100vh; /* Image cover the entire viewport of the user.*/
     background-position: center; 
     background-size: cover; /* Making the image fully scaled, adapted to viewport, non-repeating. */
@@ -19,11 +21,12 @@
 */
 
 .overlap {
+/* .overlap {
   margin-top: -150px;
   background-color: whitesmoke;
   border-radius: 10px;
   min-height: 500px;
-}
+} */
 
 .collectiveimage {
     object-fit: cover;     /* Cuts picture to fit, maintaining Aspect Ratio.*/

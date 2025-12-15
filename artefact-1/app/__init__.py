@@ -34,9 +34,58 @@ ALLOWED_EXTENSIONS = {'txt', 'pdf', 'png', 'jpg', 'jpeg', 'gif'}
 
 app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
 
-def allowed_file(filename):
+def is_allowed_file_extension(filename):
     return '.' in filename and \
            filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS
+           
+           
+def save_image(form_image):
+    """
+    Saves the uploaded image with a unique name in the upload folder.
+
+    Args:
+        form_image: The file object from a form (e.g. form.image.data)
+
+    Returns:
+        str | None: The unique filename if saved successfully, otherwise None
+    """
+    # Check if file was uploaded
+    if not form_image or not form_image.filename:
+        return None
+
+    # Get secure version of provided filename
+    filename = secure_filename(form_image.filename)
+    
+    # Check that file has an allowed extension
+    if not is_allowed_file_extension(filename):
+        return None
+    
+    # Generate a random uuid string and add it to the filename, to ensure unique filenames
+    random_str = uuid.uuid4().hex
+    stored_name = random_str + filename
+    # Store the image in the upload folder
+    filepath = os.path.join(app.config['UPLOAD_FOLDER'], stored_name)
+    form_image.save(filepath)
+    
+    return stored_name
+  
+
+def delete_picture(filename):
+    """
+    Deletes a file from the upload folder
+
+    Args:
+        filename (str): The name of the file
+    """
+    # Do nothing if filename is null or empty
+    if not filename:
+        return
+    else:
+        # Delete the file from the upload folder
+        filepath = os.path.join(app.config['UPLOAD_FOLDER'], filename)
+        if os.path.exists(filepath):
+            os.remove(filepath)
+            
 
 # Initialize SQLAlchemy and Bcrypt extensions
 db = SQLAlchemy(app)
@@ -167,7 +216,6 @@ class User(UserMixin, db.Model):
     
 
 class SeekerProfile(db.Model):
-
     __tablename__ = 'seekerprofiles'
 
     # Primary key
@@ -178,12 +226,8 @@ class SeekerProfile(db.Model):
     birthdate = db.Column(db.Date, nullable=True)
     gender = db.Column(db.String(80), nullable=True)
     occupation = db.Column(db.String(80), nullable=True)
-    image = db.Column(db.String(500), nullable=True)    # TODO: fully support this
+    image = db.Column(db.String(500), nullable=True)
 
-
-    #user = db.relationship("User", back_populates="seekerprofile")
-
-    #TODO: Mange felter bliver efterladt null. Lav evt ny side/viewfunction hvor user kan udfylde sine informationer.
     @classmethod
     def create_seekerprofile(cls, user_id, name, description, birthdate, gender, occupation, image):
         """
@@ -201,7 +245,6 @@ class SeekerProfile(db.Model):
         Returns:
             SeekerProfile: The newly created profile object
         """
-        print("DEBUG: Entered create_seekerprofile")
         if birthdate:
             birthdate = (date.fromisoformat(birthdate))
         #TODO Har fjernet .strip() fordi felterne godt kan være None. Men vi skal nok stadig have strip funktionalitet.
@@ -215,10 +258,52 @@ class SeekerProfile(db.Model):
                             image = image
                             )
         db.session.add(seekerprofile)
-        print("DEBUG: About to commit new profile")
         db.session.commit()
-        print("DEBUG: Commit succesful")
         return seekerprofile
+    
+    
+    @staticmethod
+    def get_by_user_id(user_id):
+        """
+        Retrieve a SeekerProfile by user_id.
+
+        Args:
+            id (int): The user's ID.
+
+        Returns:
+            SeekerProfile: The profile object if found, otherwise None.
+        """
+        return SeekerProfile.query.filter_by(user_id=user_id).first()
+    
+
+    def replace_all_fields(self, name, description, birthdate, gender, occupation, image):
+        """
+        Replace all profile fields (PUT)
+
+        Args:
+            name (str | None): User's name
+            description (str | None): A description of the user
+            birthdate (Date | None): User's date of birth
+            gender (str | None): User's gender
+            occupation (str | None): User's occupation
+            image (str| None): User's profile picture
+        """
+        if birthdate:
+            birthdate = (date.fromisoformat(birthdate))
+        self.name = name
+        self.description = description
+        self.birthdate = birthdate
+        self.gender = gender
+        self.occupation = occupation
+        
+        # If a new image is provided delete the old image and store the new one
+        if image:
+            delete_picture(self.image)
+            self.image = image
+        # If given image is None, we don't change the current image.
+        # User needs to explicitly delete profile picture if they want that.
+
+        db.session.commit()
       
       
 class Collective(db.Model):
@@ -470,29 +555,18 @@ def on_identity_loaded(sender, identity):
 
 #-------------------------- ROUTES -----------------------------------------------------------------------
 
-@app.route("/", methods=('GET', 'POST'))
+@app.route("/", methods=['GET'])
 def landing():
   """
-  TO MULIGE DESIGN:
-  1. ALLE, ANONYME OG BRUGERE, FØRES HERTIL
-  2. KUN ANONYME BRUGERE FØRES HERTIL
-  HVAD SYNES I?
+  Landing page for all visitors. 
 
-  Landing page for  visitorS.
+  Shows selected collectives as advertisement. 
   """
 
-  ## Løsning 1: LOgget ind brugere kan ikke tilgå landing? 
-  # if current_user.is_authenticated:
-  #   # flash('You are already logged in.','info')
-  #   role = User.get_by_id(current_user.get_id()).role   
-  #   if role == "provider":
-  #      return redirect(url_for("provider"))
-  #   else: 
-  #     return redirect(url_for("overview"))
+  # Denne her kan godt gøres mere nice.
+  selected_entries = Collective.get_all()[0:3] # Hmm, dette burde være 4, men render 3.
 
-# løsning 2: alle brugere kan altid komme til landing. (LIGE NU)
-
-  return render_template("landingpage.html")
+  return render_template("landingpage.html", selected_entries=selected_entries)
 
 @app.route("/login", methods=('GET','POST'))
 def login():
@@ -617,32 +691,50 @@ def overview():
     return render_template("overview.html", collective_entries=collective_entries)
 
 
-#! TODO: NEEDS OVERHAUL.
-@app.route("/seekerprofile",methods=["GET","POST"])
+@app.route("/profile",methods=["GET"])
 @login_required
 @seeker_permission.require()
-def seekerprofile():
-    form = ProfileForm(request.form)
-
-    if form.validate_on_submit():
-      f = form.image.data
-      filename = secure_filename(f.filename)
-      filepath = os.path.join(
-          app.config['UPLOAD_FOLDER'], filename
-      )
-      f.save(filepath)
-
-      SeekerProfile.create_seekerprofile(
-          current_user.id, 
-          form.name.data,
-          form.description.data,
-          form.birthdate.data,
-          form.gender.data,
-          form.occupation.data,
-          filename
-          )
-      return redirect(url_for("seeker"))
+def profile():
+    profile = SeekerProfile.get_by_user_id(current_user.id)
+    
+    form = ProfileForm(obj=profile)
+    
     return render_template("seekerprofile.html", form=form)
+  
+  
+@app.route("/profile",methods=["PUT"])
+@login_required
+@seeker_permission.require()
+def put_profile():
+    form = ProfileForm(request.form)
+    profile = SeekerProfile.get_by_user_id(current_user.id)
+
+    if form.validate():
+        # Get data from form
+        name = form.name.data
+        description = form.description.data
+        birthdate = form.birthdate.data
+        gender = form.gender.data
+        occupation = form.occupation.data
+        # Save image if it exists
+        filename = None
+        if form.image.data:
+            filename = save_image(form.image.data)
+        
+        if profile:
+            # Replace current profile with provided information
+            profile.replace_all_fields(name, description, birthdate, gender, occupation, filename)
+        else:
+            # Create profile with provided information
+            profile = SeekerProfile.create_seekerprofile(current_user.id, name, description, birthdate, gender, occupation, filename)
+      
+        flash("Profile saved!", "success")
+        return redirect(url_for("profile"))
+    else:
+        # Reload site with the form data so user doesn't have to start all over if they input something invalid
+        flash("Invalid input", "error")
+        return render_template("seekerprofile.html", form=form)
+
 
 # ------------------------- Provider Routes ---------------------------------
 @app.route("/provider",methods=["GET","POST"])

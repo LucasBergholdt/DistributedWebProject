@@ -8,56 +8,80 @@
 <!-- ingen header class? Jeg kunne gøre øvserte hero sektion til header /Lasse -->
 
 <section class="hero">
-    <div class="container h-50">
-        <div class="row h-100 align-items-center">
-            <div class="col-12 text-center">
-                 <!--Header: intro section-->
+    <div class="container h-50"> <!-- Use 50% of parent height-->
+        <div class="row h-100 align-items-center"> <!-- use 100% of parent height -->
+            <div class="col-12 text-center"> <!-- span all 12 columns-->
+                <!--Header: intro section-->
                 <h1 class="text-white font-weight-bold">Live together!</h1>
-                <p class="lead text-white mb-4">Kollektivportalen matches seekers of collectives with providers of collectives.</p>
-                
-                      <!-- <div class="position-absolute top-0 start-0 w-100 h-100 bg-dark" style="opacity: 0.5;"></div> -->
+                <p class="lead text-white mb-4">Kollektivportalen matches seekers of collectives with providers of
+                    collectives.</p>
+
+                <!-- <div class="position-absolute top-0 start-0 w-100 h-100 bg-dark" style="opacity: 0.5;"></div> -->
                 <!-- Search -->
-                    <div class="form-container mt-4">
-                        <span class="form-badge bg-primary bg-opacity-10 text-primary"></span>
-                        <form method="get" action="{{ url_for('overview') }}">
-                            <div class="input-group mb-3 shadow-sm rounded-pill overflow-hidden">
-                                <input type="text" name="city" class="form-control border-0 py-3 px-4"
-                                    placeholder="In which city do you want to live?" aria-label="Search for a city" aria-describedby="searchbutton">
-                                <button class="btn btn-primary px-4 search-btn" type="submit" id="searchbutton">
-                                    <i class="bi bi-search animated-icon"></i>
-                                </button>
-                            </div>
-                        </form>
-                    <!-- <a href="#" class="btn btn-primary btn-lg">Register today</a> --> <!-- Jeg overvejer om vi vil have en sådan knap /Lasse-->
-                    </div>
+                <div class="form-container mt-4">
+                    <span class="form-badge bg-primary bg-opacity-10 text-primary"></span>
+                    <form method="get" action="{{ url_for('overview') }}">
+                        <div class="input-group mb-3 shadow-sm rounded-pill overflow-hidden">
+                            <input type="text" name="city" class="form-control border-0 py-3 px-4"
+                                placeholder="In which city do you want to live?" aria-label="Search for a city"
+                                aria-describedby="searchbutton">
+                            <button class="btn btn-primary px-4 search-btn" type="submit" id="searchbutton">
+                                <i class="bi bi-search animated-icon">Search</i>
+                            </button>
+                        </div>
+                    </form>
+                    <!-- <a href="#" class="btn btn-primary btn-lg">Register today</a> -->
+                    <!-- Jeg overvejer om vi vil have en sådan knap /Lasse-->
+                </div>
             </div>
         </div>
-    </section>
+</section>
 <!-- main: main content of the page -->
 
 <!-- py vs mt -->
-<main> 
-  <div class="container sm overlap"> <!--small container with custom overlap-->
-    <h1>Selected collectives</h1>
-    <p class="lead">IMAGE1,IMAGE2, etc.</p>
-  </div>
+<main>
+    <div class="container mt-4"> <!--small container with custom overlap-->
+        <h3 class="text-center">Collectives looking for applicants today</h3>
+
+        <div class="d-flex flex-nowrap gap-3 justify-content-center">
+            <!-- Never wrap to next row -->
+            {% for entry in selected_entries %}
+            <div class="card my-2" style="width: 18rem;">
+                <img class="card-img-top collectiveimage"
+                    src="{{ url_for('static', filename='images/' ~ entry.image) }}" alt="Image of a collective">
+                <div class="card-body">
+                    <h5 class="card-title">{{ entry.street }}</h5>
+                    <h6 class="card-subtitle mb-2 text-muted">{{ entry.city }}</h6>
+                </div>
+                <ul class="list-group list-group-flush">
+                    <li class="list-group-item">{{ entry.roomsize }} square meters</li>
+                    <li class="list-group-item">{{ entry.price }} DKK</li>
+                </ul>
+                <div class="card-body">
+                    <a href="#" class="card-link">Apply</a>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+
+
+    </div>
+    </div>
+    <div class="container mt-5"> <!--small container with custom overlap-->
+        <h1 class="display-6">What is a "Kollektiv"?</h1>
+        <p class="lead">Glad you asked! Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor
+            incididunt ut
+            labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris
+            nisi ut
+            aliquip ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse
+            cillum
+            dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident, sunt in culpa qui
+            officia
+            deserunt mollit anim id est laborum</p>
+    </div>
+
+
 </main>
-
-
-
-
-
-
-
-<!-- Denne i sin egen fil? -->
-<footer class="container">
-    <div class="float-end"><a href="#">Back to top</a></div>
-    <div>© 2025 Kollektivportalen.dk · <a href="#">Privacy</a> · <a href="#">Terms</a></div>
-</footer>
-
-
-</div>
-
 
 
 {% endblock body%}

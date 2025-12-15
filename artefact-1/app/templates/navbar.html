@@ -22,7 +22,7 @@
                 </li>
                 {% if current_user.role == "seeker" %}
                 <li class="nav-item">
-                    <a class="nav-link link-light" href="{{ url_for('seekerprofile')}}">Your Profile</a>
+                    <a class="nav-link link-light" href="{{ url_for('profile')}}">Your Profile</a>
                 </li>
                 {% endif %}
                 {% if current_user.role == "provider" %}

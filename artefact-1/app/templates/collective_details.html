@@ -1,0 +1,30 @@
+{% extends 'base.html' %}
+
+{% block body%}
+
+<section class="collectivedetails"> 
+    <!-- Display IMG in large-->
+    <div class="container-fluid px-0 d-flex justify-content-center mb-4">
+        <img src="{{ url_for('static', filename='images/' ~ entry.image) }}" class="border img-fluid rounded collectivepage" alt="Responsive image">
+    </div>
+    <div class="container w-75">
+        <div class="mb-4">
+            <h1 class="mb-2">
+                {{ entry.roomsize }} m<sup>2</sup> room available for {{ entry.price }} DKK a month
+            </h1>
+            <h2 class="text-muted">
+                {{ entry.street }}, {{ entry.city }}
+            </h2>
+        </div>
+        <div class="w-50">
+            <p class="text-left font-weight-normal">{{ entry.description }}</p>
+        </div>
+    </div>
+
+<!--    A Carousel would be an option if we had multiple pictures pr. collectives.
+-->
+
+</section>
+
+
+{% endblock body%}

@@ -8,13 +8,13 @@
     <div class="container h-50"> <!-- Use 50% of parent height-->
         <div class="row h-100 align-items-center"> <!-- use 100% of parent height -->
             <div class="col-12 text-center"> <!-- span all 12 columns-->
-                
+
                 <!-- Intro section-->
                 <h1 class="text-white font-weight-bold">Live together!</h1>
                 <p class="lead text-white mb-4">Kollektivportalen matches seekers of collectives with providers of
                     collectives.</p>
 
-                    <!-- Search -->
+                <!-- Search -->
                 <div class="form-container mt-4">
                     <span class="form-badge bg-primary bg-opacity-10 text-primary"></span>
                     <form method="get" action="{{ url_for('overview') }}">
@@ -42,8 +42,8 @@
             <!-- Never wrap to next row -->
             {% for entry in selected_entries %}
             <div class="card my-2" style="width: 18rem;">
-                <img class="card-img-top collectiveimage"
-                    src="{{ url_for('static', filename='images/' ~ entry.image) }}" alt="Image of a collective">
+                <a href="{{ url_for('collective_details', id=entry.id)}}"><img class="card-img-top collectiveimage"
+                        src="{{ url_for('static', filename='images/' ~ entry.image) }}" alt="Image of a collective"></a>
                 <div class="card-body">
                     <h5 class="card-title">{{ entry.street }}</h5>
                     <h6 class="card-subtitle mb-2 text-muted">{{ entry.city }}</h6>

@@ -343,6 +343,23 @@ class Collective(db.Model):
         """Get all Collectives which cityname has given argument as prefix)"""
         return Collective.query.filter(Collective.city.startswith(city)).all()
     
+    def get_by_filters(city, roomsize, price):
+        """Filters collectives by multiple filters."""
+        # Fetch all queries.
+        query = Collective.query
+
+        # Filter step-by-step
+        if city:
+            query = query.filter(Collective.city.startswith(city))
+
+        if roomsize:
+            query = query.filter(Collective.roomsize >= roomsize)
+
+        if price:
+            query = query.filter(Collective.price <= price)
+
+        return query.all()
+
 
     @classmethod
     def create_collective(cls, submitter_id, city, street, roomsize, price, description, image):
@@ -508,6 +525,12 @@ class CollectiveForm(FlaskForm):
   image = FileField(validators=[FileRequired()])
 
   submit = SubmitField('Register your collective')
+
+class SearchForm(FlaskForm):
+  city = StringField('Filter by city', validators=[Length(min=1, max=80, message='You cannot have less than 1 or more than 80 characters')])
+  roomsize = IntegerField('Size of room')
+  price = IntegerField('Price in DKK')
+  submit = SubmitField('Search')
 
 class ApplicationForm(Form):
   description = StringField('Your application', validators=[DataRequired(), Length(min=1, max=80, message='You cannot have less than 1 or more than 80 characters')])
@@ -687,11 +710,18 @@ Providers:
 
 
 # ------------------------- Seeker Routes ---------------------------------
-@app.route("/overview", methods=["GET","POST"])
+@app.route("/overview", methods=["GET"])
 def overview():
-    city = request.args.get("city", type=str)
-    if city is not None:
-        collective_entries = Collective.get_by_city(city) # returner alle som starter med dette city-navn.
+    form = SearchForm(formdata=request.args)
+
+    # if any arguments is given to URL
+    if (request.args):
+       flash("Debug!")
+       collective_entries = Collective.get_by_filters(
+           form.city.data,
+           form.roomsize.data,
+           form.price.data 
+        )
     else:
        collective_entries = Collective.get_all()
 
@@ -702,7 +732,7 @@ def overview():
       # Collective.get_by_submitter(current_user.id)
       # som argument: your_applications=your_applications
       
-    return render_template("overview.html", collective_entries=collective_entries)
+    return render_template("overview.html", collective_entries=collective_entries, form=form)
 
 @app.route("/collective_details/<int:id>", methods=["GET","POST"])
 def collective_details(id):

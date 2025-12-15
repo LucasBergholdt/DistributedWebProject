@@ -1,0 +1,220 @@
+\usepackage[utf8]{inputenc}
+%%%%%	Standardpakker og -opsætning til 'normalt' dokument:
+	\usepackage[utf8]{inputenc}
+	\usepackage[T1]{fontenc}
+	\usepackage[danish]{babel}
+	\usepackage{amsmath, amsfonts, amssymb, amsthm}
+	\usepackage[left=2cm, right=2cm, top=3cm, bottom=3cm]{geometry} 
+	\usepackage{graphicx}
+
+%sidehovede
+\usepackage{fancyhdr}
+	\pagestyle{fancy}
+	\setlength{\headheight}{15pt}
+\fancyhead[L]{Lucas, Carl-Emil, Lasse}
+\fancyhead[C]{Group: xx}
+\fancyhead[R]{5. Semester}
+
+%landscape for images
+\usepackage{rotating}
+\usepackage{float}
+
+%%% Standardoplysninger (til metadata og \maketitle):
+	\author{\textbf{Group: xx} \\
+    Lasse Arpe Kristensen (lakri18)\\
+    Carl-Emil Dons Christensen (carlc23)\\
+    Lucas Bergholdt Hansen (lucha23)
+    }
+	\title{ \vspace*{-2em} DM585 Distributed Web Application Project}
+  
+	\date{21-12-2025}
+    
+%%%%%	Normale basisjusteringer
+	\setlength{\parindent}{0.0em}
+	\setlength{\parskip}{1em}
+	\linespread{1.1}
+%%%%%	Comments
+\usepackage{comment}
+
+%%%%% Wrap figures
+\usepackage{wrapfig}
+% \usepackage[export]{adjustbox} %%% aligning images to right. https://www.overleaf.com/learn/latex/Positioning_images_and_tables
+
+%%%%%	Ekstra pakker og indstillinger, der gør dokumentet lidt lækrere:
+\usepackage{times}
+%\usepackage{lastpage}
+\usepackage{titlesec}
+	\titlespacing{\paragraph}{0pt}{2pt}{6pt}
+	\titlespacing{\section}{0pt}{8pt plus 2pt minus 2pt}{0pt}
+	\titlespacing{\subsection}{0pt}{6pt plus 1pt minus 1pt}{0pt}
+
+\begin{comment}
+Følgende er kommenteret ud da det giver bogstaver til ordered lists. -CE
+
+\usepackage{enumitem} 
+	\setlist{itemsep=0.8pt}
+	\setlist{topsep=0.0pt}
+	\setlist[description]{leftmargin=4em,labelindent=2em}
+	\setlist[enumerate,1]{label={(\alph*)}}
+\end{comment}
+
+%% Programming snippets
+\usepackage{listings}
+
+
+%general packages for showing codes from programmes
+\usepackage{tcolorbox}
+\newtcbox{\code}{on line,             % Extra option to make text stay on line instead of moving all text before and after the \code{} text to new lines.
+colupper = black!95!white,            % Font color
+colback  = white!85!black,            % Background color
+boxrule  = 0pt,                       % Border length
+left     = 1pt, 
+right    = 1pt, 
+top      = -1pt, 
+bottom   = -1pt,                      % Extra space to the horisontal and vertical directions
+arc      = 4pt}                       % The arc of the corner. You could also call it the roundness factor to the corners.
+
+% Nu lidt kode miljø indstillinger.
+% Først skal vi bruge nogle farver, som ikke kun behøves at bruges a listlings biblioteket.
+\usepackage{xcolor}
+\definecolor{comment_color}{rgb}{0,0.6,0}
+\definecolor{number_color}{rgb}{0.2, 0.2, 0.8}
+\definecolor{string_color}{rgb}{0.58,0.0,0.82}
+\definecolor{code_background_color}{rgb}{0.95, 0.93, 0.90}
+\definecolor{keyword_color}{rgb}{1.0,0.4,0.0}
+
+% Nu kan vi indstille biblioteket Listings
+
+\lstdefinestyle{mystyle}{
+  backgroundcolor = \color{code_background_color},
+  commentstyle = \color{comment_color},
+  keywordstyle = \color{keyword_color},
+  numberstyle = \sffamily\tiny\color{number_color},
+  stringstyle = \color{string_color},
+  basicstyle = \sffamily\footnotesize, %font families: sffamily, ttfamily
+  breakatwhitespace = false,
+  breaklines = true,
+  prebreak=\raisebox{0ex}[0ex][0ex]{\ensuremath{\hookleftarrow}},
+  captionpos = b,
+  keepspaces = true,
+  numbers = left,
+  numbersep = 10pt,
+  showspaces = false,
+  showstringspaces = false,
+  showtabs = true,
+  tabsize = 2,
+  frame = leftline
+}
+
+\lstset{style=mystyle}
+
+
+\definecolor{eclipseStrings}{RGB}{0,128,0}
+\definecolor{eclipseKeywords}{RGB}{0,0,0}
+\colorlet{numb}{red!80!black}
+
+\lstdefinelanguage{json}{
+    basicstyle=\normalfont\ttfamily,
+    commentstyle=\color{eclipseStrings}, % style of comment
+    stringstyle=\color{eclipseKeywords}, % style of strings
+    numbers=left,
+    numberstyle=\scriptsize,
+    stepnumber=1,
+    numbersep=8pt,
+    showstringspaces=false,
+    breaklines=true,
+    frame=lines,
+    backgroundcolor=\color{code_background_color}, %only if you like
+    string=[s]{"}{"},
+    comment=[l]{:\ "},
+    morecomment=[l]{:"},
+    literate=
+        *{0}{{{\color{numb}0}}}{1}
+         {1}{{{\color{numb}1}}}{1}
+         {2}{{{\color{numb}2}}}{1}
+         {3}{{{\color{numb}3}}}{1}
+         {4}{{{\color{numb}4}}}{1}
+         {5}{{{\color{numb}5}}}{1}
+         {6}{{{\color{numb}6}}}{1}
+         {7}{{{\color{numb}7}}}{1}
+         {8}{{{\color{numb}8}}}{1}
+         {9}{{{\color{numb}9}}}{1}
+}
+
+
+%YAML highligthing fra: https://tex.stackexchange.com/questions/152829/how-can-i-highlight-yaml-code-in-a-pretty-way-with-listings
+\newcommand\YAMLcolonstyle{\color{red}\mdseries}
+\newcommand\YAMLkeystyle{\color{black}\bfseries}
+\newcommand\YAMLvaluestyle{\color{blue}\mdseries}
+
+\makeatletter
+
+% here is a macro expanding to the name of the language
+% (handy if you decide to change it further down the road)
+\newcommand\language@yaml{yaml}
+
+\expandafter\expandafter\expandafter\lstdefinelanguage
+\expandafter{\language@yaml}
+{
+  keywords={true,false,null,y,n},
+  keywordstyle=\color{darkgray}\bfseries,
+  basicstyle=\YAMLkeystyle,                                 % assuming a key comes first
+  sensitive=false,
+  comment=[l]{\#},
+  morecomment=[s]{/*}{*/},
+  commentstyle=\color{purple}\ttfamily,
+  stringstyle=\YAMLvaluestyle\ttfamily,
+  moredelim=[l][\color{orange}]{\&},
+  moredelim=[l][\color{magenta}]{*},
+  moredelim=**[il][\YAMLcolonstyle{:}\YAMLvaluestyle]{:},   % switch to value style at :
+  morestring=[b]',
+  morestring=[b]",
+  literate =    {---}{{\ProcessThreeDashes}}3
+                {>}{{\textcolor{red}\textgreater}}1     
+                {|}{{\textcolor{red}\textbar}}1 
+                {\ -\ }{{\mdseries\ -\ }}3,
+}
+
+% switch to key style at EOL
+\lst@AddToHook{EveryLine}{\ifx\lst@language\language@yaml\YAMLkeystyle\fi}
+\makeatother
+
+\newcommand\ProcessThreeDashes{\llap{\color{cyan}\mdseries-{-}-}}
+
+
+\usepackage{float}
+\usepackage{calc}
+\usepackage{gensymb}
+
+\newcommand{\pmat}[1]{\ensuremath{\begin{pmatrix}#1\end{pmatrix}}}
+\usepackage{subcaption}
+
+%%%%% captions
+\usepackage{caption}
+\captionsetup{
+    format = plain,
+    font = footnotesize,
+    labelfont = sc
+}
+%
+
+\usepackage{biblatex}
+\addbibresource{referencer.bib} 
+
+%\bibliographystyle{plain} 
+\bibliography{referencer} % Entries are in the referencer.bib file
+
+\usepackage{hyperref}
+\usepackage{enumitem}
+
+\usepackage{booktabs}
+\usepackage{pgfplots}
+\pgfplotsset{width=6.8cm,compat=1.9}
+\usepackage{comment}
+
+%%%%%% Til referencer
+%\usepackage[backend=biber]{biblatex}
+%\usepackage{cite}
+%\addbibresource{referencer.bib} 
+
+

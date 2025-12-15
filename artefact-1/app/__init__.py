@@ -246,8 +246,6 @@ class SeekerProfile(db.Model):
         Returns:
             SeekerProfile: The newly created profile object
         """
-        if birthdate:
-            birthdate = (date.fromisoformat(birthdate))
         #TODO Har fjernet .strip() fordi felterne godt kan være None. Men vi skal nok stadig have strip funktionalitet.
         seekerprofile = cls(
                             user_id = user_id,
@@ -289,8 +287,6 @@ class SeekerProfile(db.Model):
             occupation (str | None): User's occupation
             image (str| None): User's profile picture
         """
-        if birthdate:
-            birthdate = (date.fromisoformat(birthdate))
         self.name = name
         self.description = description
         self.birthdate = birthdate
@@ -724,11 +720,11 @@ def profile():
     return render_template("seekerprofile.html", form=form, profile=profile)
   
   
-@app.route("/profile",methods=["PUT"])
+@app.route("/profile",methods=["POST"])
 @login_required
 @seeker_permission.require()
 def put_profile():
-    form = ProfileForm(request.form)
+    form = ProfileForm()
     profile = SeekerProfile.get_by_user_id(current_user.id)
 
     if form.validate():
@@ -755,7 +751,7 @@ def put_profile():
     else:
         # Reload site with the form data so user doesn't have to start all over if they input something invalid
         flash("Invalid input", "error")
-        return render_template("seekerprofile.html", form=form)
+        return render_template("seekerprofile.html", form=form, profile=profile)
 
 
 # ------------------------- Provider Routes ---------------------------------

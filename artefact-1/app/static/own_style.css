@@ -20,13 +20,13 @@
 }
 */
 
-.overlap {
 /* .overlap {
   margin-top: -150px;
   background-color: whitesmoke;
   border-radius: 10px;
   min-height: 500px;
 } */
+
 
 .collectiveimage {
     object-fit: cover;     /* Cuts picture to fit, maintaining Aspect Ratio.*/

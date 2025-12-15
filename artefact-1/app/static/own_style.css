@@ -33,3 +33,9 @@
     width: 100%;
     height: 300px;
 }
+
+.collectivepage {
+    object-fit: cover;     /* Cuts picture to fit, maintaining Aspect Ratio.*/
+    width: 100%;
+    height: 500px;
+}

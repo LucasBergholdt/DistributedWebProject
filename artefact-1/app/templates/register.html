@@ -1,28 +1,39 @@
 {% extends 'base.html' %}
 
 {% block body%}
-  <h1>Sign Up</h1>
 
-  <form method="post">¨
-    <div>
-      {{ form.role.label }}
-      {{ form.role }}
+<div class="b-example-divider"></div>
+<div class="container col-xl-10 col-xxl-8 px-4 py-5">
+  <div class="row align-items-center g-lg-5 py-5">
+    <div class="col-lg-7 text-center text-lg-start">
+      <h1 class="display-4 fw-bold lh-1 text-body-emphasis mb-3">
+        Join or Create a Collective. Save money, make friends.
+      </h1>
+      <p class="col-lg-10 fs-4">
+        Kollektivportalen is created to help seekers of collectives match with providers of collectives.
+      </p>
     </div>
-    <div>
-    {{ form.email.label }}
-    {{ form.email }}
+    <div class="col-md-10 mx-auto col-lg-5">
+      <form class="p-4 p-md-5 border rounded-3 bg-body-tertiary" form method="post">
+        <h2>Register for an account</h2>
+        <p>{{ form.email.label }}</p>
+        <div class="form-floating mb-3">
+          {{ form.email }}
+        </div>
+        <p>{{ form.password.label }}</p>
+        <div class="form-floating mb-3">
+          {{ form.password }}
+        </div>
+        <div class="form-floating mb-3">
+          I'm a {{ form.role }}</div>
+        <div>
+          <button class="w-100 btn btn-lg btn-primary" type="submit">
+            Sign up
+          </button>
+        </div>
+      </form>
     </div>
-    <div>
-    {{ form.password.label }}
-    {{ form.password }}
-    </div>
-    <div>
-    {{ form.confirm.label }}
-    {{ form.confirm }}
-    </div>
-    <div>
-    {{ form.submit }}
-    </div>
-  </form>
 
-{% endblock body%}
+  </div>
+
+  {% endblock body%}

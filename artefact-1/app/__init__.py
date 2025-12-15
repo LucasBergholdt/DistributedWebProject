@@ -490,7 +490,7 @@ class ProfileForm(FlaskForm):
   birthdate = DateField('Birthdate', format="%Y-%m-%d", validators=[Optional()])
   gender = RadioField('Gender', choices=[('male', 'Male'), ('female', 'Female'), ('other', 'Other')], validators=[Optional()])
   occupation = StringField('Occupation', validators=[Optional(), Length(min=1, max=80, message='You cannot have less than 1 or more than 80 characters')])
-  image = FileField(validators=[FileRequired()])
+  image = FileField("Profile picture", validators=[FileRequired()])
   submit = SubmitField('Save Profile')
 
 

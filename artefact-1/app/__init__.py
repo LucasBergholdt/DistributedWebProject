@@ -472,29 +472,18 @@ def on_identity_loaded(sender, identity):
 
 #-------------------------- ROUTES -----------------------------------------------------------------------
 
-@app.route("/", methods=('GET', 'POST'))
+@app.route("/", methods=('GET'))
 def landing():
   """
-  TO MULIGE DESIGN:
-  1. ALLE, ANONYME OG BRUGERE, FØRES HERTIL
-  2. KUN ANONYME BRUGERE FØRES HERTIL
-  HVAD SYNES I?
+  Landing page for all visitors. 
 
-  Landing page for  visitorS.
+  Shows selected collectives as advertisement. 
   """
 
-  ## Løsning 1: LOgget ind brugere kan ikke tilgå landing? 
-  # if current_user.is_authenticated:
-  #   # flash('You are already logged in.','info')
-  #   role = User.get_by_id(current_user.get_id()).role   
-  #   if role == "provider":
-  #      return redirect(url_for("provider"))
-  #   else: 
-  #     return redirect(url_for("overview"))
+  # Denne her kan godt gøres mere nice.
+  selected_entries = Collective.get_all()[0:3] # Hmm, dette burde være 4, men render 3.
 
-# løsning 2: alle brugere kan altid komme til landing. (LIGE NU)
-
-  return render_template("landingpage.html")
+  return render_template("landingpage.html", selected_entries=selected_entries)
 
 @app.route("/login", methods=('GET','POST'))
 def login():

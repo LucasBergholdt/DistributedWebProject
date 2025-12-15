@@ -28,7 +28,7 @@ app.config['SECRET_KEY'] = "change-me"
 
 # Configure app for images
 
-UPLOAD_FOLDER = 'static/images'
+UPLOAD_FOLDER = os.path.join(app.root_path, 'static', 'images')
 ALLOWED_EXTENSIONS = {'txt', 'pdf', 'png', 'jpg', 'jpeg', 'gif'}
 
 app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER

@@ -22,7 +22,7 @@
   <div class="d-flex align-items-start flex-wrap p-3 bg-light container">
     {% for entry in collective_entries %}
     <div class="card mx-2 my-2" style="width: 18rem;">
-      <img class="card-img-top collectiveimage" src="{{ url_for('static', filename='images/' ~ entry.image) }}" alt="Image of a collective">
+      <a href="{{ url_for('collective_details', id=entry.id)}}"><img class="card-img-top collectiveimage" src="{{ url_for('static', filename='images/' ~ entry.image) }}" alt="Image of a collective"></a>
       <div class="card-body">
         <h5 class="card-title">{{ entry.street }}</h5>
         <h6 class="card-subtitle mb-2 text-muted">{{ entry.city }}</h6>

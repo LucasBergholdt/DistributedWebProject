@@ -8,6 +8,16 @@
     border-bottom-right-radius: 25px; 
 }
 
+/* development: background for overview page.
+.overview {
+    background-color: #ffb300;
+    height: 100vh;
+}
+.flexinoverview {
+    background-color: #ffb300;
+}
+*/
+
 .overlap {
   margin-top: -150px;
   background-color: whitesmoke;

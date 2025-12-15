@@ -8,6 +8,7 @@ from flask_bcrypt import Bcrypt
 from flask_principal import Principal, Permission, RoleNeed, UserNeed, Identity, AnonymousIdentity, identity_changed, identity_loaded
 from wtforms import DateField, IntegerField, DateTimeField, DecimalField, FileField, Form, RadioField, SubmitField, SelectField, StringField, EmailField, PasswordField, BooleanField, TextAreaField, ValidationError
 from wtforms.validators import DataRequired, Length, Email, EqualTo, InputRequired, Optional
+# from wtforms.widgets import TextArea
 from werkzeug.utils import secure_filename
 import os
 
@@ -226,16 +227,13 @@ class Collective(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     submitter_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False)
 
-    # description = db.Column(db.String(500))
-
-    city = db.Column(db.String(500))
-    street = db.Column(db.String(500))
-
-    price = db.Column(db.Integer())
-
-    # address = db.Column(db.String(500))
+    city = db.Column(db.String(80))
+    street = db.Column(db.String(80))
 
     roomsize = db.Column(db.Integer())
+    price = db.Column(db.Integer())
+
+    description = db.Column(db.String(500))
     image = db.Column(db.String(500))
   
     # Many-One relationship between Collective and User
@@ -258,7 +256,7 @@ class Collective(db.Model):
         return Collective.query.filter(Collective.city.startswith(city)).all()
     
     @classmethod
-    def create_collective(cls, submitter_id, city, street, roomsize, price, image):
+    def create_collective(cls, submitter_id, city, street, roomsize, price, description, image):
       """
       Create a new collective with the provided details.
 
@@ -273,10 +271,11 @@ class Collective(db.Model):
       
       collective = cls(
           submitter_id = submitter_id,
-          price = price,
           city = city.strip(),
           street = street.strip(),
           roomsize = roomsize,
+          price = price,
+          description = description.strip(),
           image = image.strip()
       )
                   
@@ -334,7 +333,7 @@ class Application(db.Model):
       application = cls(
           submitter_id        = submitter_id,
           collective_id       = collective_id,
-          description     =description.strip(),
+          description     = description.strip(),
       )
                   
       db.session.add(application)
@@ -353,12 +352,11 @@ def create_default_userbase():
 
 # Debug Purposes
 def create_default_collectives_applications():
-  Collective.create_collective(2, "Odense C", "Vindegade", 50, 2569, "1.jpg") #submitterID = 2. provider@gmail.com.
-  Collective.create_collective(2, "Odense M", "Bogense", 23, 5000, "2.jpg") #submitterID = 2. provider@gmail.com.
-  Collective.create_collective(2, "Odense M", "Stige", 35, 4000, "3.jpg") #submitterID = 2. provider@gmail.com.
+  Collective.create_collective(2, "Odense C", "Vindegade", 50, 2569, "Just another great collective","1.jpg") #submitterID = 2. provider@gmail.com.
+  Collective.create_collective(2, "Odense M", "Bogense", 23, 5000, "Greetings! Welcome.", "2.jpg") #submitterID = 2. provider@gmail.com.
+  Collective.create_collective(2, "Odense M", "Stige", 35, 4000, "This is a great collective to live in! Please join me, Lasse and Lucas!", "3.jpg") #submitterID = 2. provider@gmail.com.
 
   # Application.create_application(1, 1, "Jeg hedder Alice og vil gerne søge ind på kollektivet på Skovbogade.")
-
 
 
 # Clears the database and create tables within the application context
@@ -367,8 +365,6 @@ with app.app_context():
   db.create_all()
   create_default_userbase()
   create_default_collectives_applications()
-
-
 
 
 # -------------------------------- FORMS ------------------------------------- #
@@ -408,6 +404,8 @@ class CollectiveForm(FlaskForm):
   roomsize = IntegerField('Size of the room available (square meters)', validators=[DataRequired()])
 
   price = IntegerField('Price in DKK', validators=[DataRequired()])
+
+  description = TextAreaField('Describe your collective', validators=[DataRequired(), Length(min=1, max=300, message='You cannot have less than 1 or more than 300 characters')])
 
   image = FileField(validators=[FileRequired()])
 
@@ -683,6 +681,7 @@ def new_collective():
           form.street.data,
           form.roomsize.data,
           form.price.data,
+          form.description.data,
           filename
           )
       return redirect(url_for("provider"))

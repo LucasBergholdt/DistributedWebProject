@@ -157,7 +157,7 @@ class User(UserMixin, db.Model):
       Create a new user with the provided details.
 
       Args:
-          name (str): The user's name.
+          role (str): The user's role.
           email (str): The user's email.
           password (str): The user's password, which will be hashed before storage.
 
@@ -467,7 +467,7 @@ class RegistrationForm(Form):
   # name = StringField('Name', validators=[DataRequired(), Length(min=1, max=80, message='You cannot have less than 1 or more than 80 characters')])
   email = EmailField('Email', validators=[DataRequired(), email_exists, Email()])
   password = PasswordField('Password', validators=[DataRequired(), EqualTo('confirm', message='Password must match')])
-  confirm = PasswordField('Confirm', validators=[DataRequired()])
+  confirm = PasswordField('Confirm password', validators=[DataRequired()])
   submit = SubmitField('Register')
 
 
@@ -579,8 +579,7 @@ def login():
     """
     if current_user.is_authenticated:
       flash('You are already logged in.','info')
-          # role = User.get_by_id(current_user.get_id()).role
-      return redirect(url_for("overview"))
+      return redirect(url_for("landing"))
     else:
         form = LoginForm(request.form)
         if request.method == 'POST' and form.validate():
@@ -592,7 +591,7 @@ def login():
                 # Tell Flask-Principal the identity has changed
                 identity_changed.send(current_app._get_current_object(), identity=Identity(user.id))
 
-                # Redirect to proper role.
+                # Redirect to landing
                 return redirect(url_for("landing"))
             else:
                 # Otherwise, display an error message and display the login form again
@@ -603,23 +602,24 @@ def login():
 def register():
   if current_user.is_authenticated:
     flash('You are already logged in.','info')
-    role = User.get_by_id(current_user.get_id()).role
-    return redirect(url_for(role))
+
+    return redirect(url_for("landing"))
   else:
     form = RegistrationForm(request.form)
 
     if request.method == 'POST' and form.validate():
-      User.create_user(
+      user = User.create_user(
                       role = form.role.data,
                       email = form.email.data,
                       password = form.password.data
                       )
-      flash("User created.","success")
-
-      return redirect(url_for('login'))
-    elif request.method == 'POST':
-      flash("post bracket entered but form not validated.","Debug:")  # Only for debug purposes.
-    return render_template('register.html', form=form, error="Invalid input")
+      
+      login_user(user)
+      flash("User created.","success") # Skal vi egentlig overveje at fjerne disse? Ikke så "pro"
+      return redirect(url_for('landing'))
+    # elif request.method == 'POST':
+    #     flash("post bracket entered but form not validated.","Debug:")  # Only for debug purposes.
+    return render_template('register.html', form=form)
 
 @app.route('/logout', methods=['GET'])
 @login_required
@@ -634,6 +634,7 @@ def logout():
     # Tell Flask-Principal the user is anonymous
     identity_changed.send(current_app._get_current_object(),
                           identity=AnonymousIdentity())
+    
     return redirect(url_for('login'))
 
 """ LAYOUT OF WEBPAGE:

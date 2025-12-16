@@ -1,0 +1,61 @@
+<!-- Becomes vertical on small machines -->
+<nav class="navbar sticky-top navbar-expand-sm navbar-dark bg-primary">
+    <!-- #TODO: sticky-top=? -->
+    <!-- navbar-dark: white text. -->
+    <!-- bg-primary: blue background color to navbar. -->
+
+    <div class="container-fluid">
+        <!-- Links -->
+        <a class="navbar-brand" href="{{ url_for('landing') }}">Kollektivportalen</a> <!-- -->
+
+        <!-- Nedenstående gør, vores menu tilpasser sig smalle viewports!  -->
+        <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarSupportedContent"
+            aria-controls="navbarSupportedContent" aria-expanded="false" aria-label="Toggle navigation">
+            <span class="navbar-toggler-icon"></span>
+        </button>
+
+        <div class="collapse navbar-collapse" id="navbarSupportedContent">
+
+            <ul class="navbar-nav"> <!-- Left is default -->
+                <li class="nav-item">
+                    <a class="nav-link" href="{{ url_for('collectives_index') }}">Overview of all collectives</a>
+                </li>
+                {% if current_user.role == "seeker" %}
+                <li class="nav-item">
+                    <a class="nav-link link-light" href="{{ url_for('profile')}}">Your Profile</a>
+                </li>
+                {% endif %}
+                {% if current_user.role == "provider" %}
+                <li class="nav-item">
+                    <a class="nav-link link-light" href="{{ url_for('provider_collectives') }}">Your Collectives </a>
+                </li>
+                {% endif %}
+            </ul>
+
+            <ul class="navbar-nav ms-auto"> <!-- Pushes to the right.-->
+                {% if current_user.is_authenticated %}
+
+                <!-- Overvej om vi ønsker dette, kan bare fjernes: -->
+                <li class="nav-item">
+                    <span class="nav-link disabled text-light">
+                        Logged in
+                    </span>
+                    <!-- {{current_user.name}}, {{current_user.role}} -->
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link link-light" href="{{ url_for('logout')}}">Log out</a>
+                </li>
+                {% else %}
+                <li class="nav-item">
+                    <a class="nav-link link-light" href="{{ url_for('login') }}">Login</a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link link-light" href="{{ url_for('register') }}">Register</a>
+                </li>
+            </ul>
+            {% endif %}
+            </ul>
+        </div>
+    </div>
+    </div>
+</nav>

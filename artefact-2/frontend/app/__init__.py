@@ -4,7 +4,7 @@ import os
 import requests
 from wtforms import DateField, Form, RadioField, SelectField, StringField, SubmitField, EmailField, PasswordField, BooleanField, TextAreaField
 from wtforms.validators import DataRequired, Email, EqualTo, Optional, Length
-from flask import Flask, redirect, render_template, request, session, url_for, flash
+from flask import Flask, g, redirect, render_template, request, session, url_for, flash
 from flask_wtf import FlaskForm
 from flask_wtf.file import FileField, FileRequired
 
@@ -51,24 +51,54 @@ class ProfileForm(FlaskForm):
 
 # DECORATORS ----------------------------------------------------------------------
 
+@app.before_request
+def load_auth_context():  
+  # Skip static files
+  if request.endpoint == "static":
+    return
+  
+  # Initialise current user as not authenticated with no role
+  g.user = {
+    "is_authenticated": False,
+    "role": None
+  }
+  
+  token = session.get("session_token")
+  if not token:
+    return # not authenticated
+  
+  # session_token is not empty:
+  response = requests.get(f"{AUTH_API}/sessions", params={"session_token": token})
+  
+  if response.ok:
+    data = response.json()
+    # set current user to authenticated with correct role
+    g.user = {
+      "is_authenticated": True,
+      "role": data["role"]
+    }
+  else:
+    # invalid session
+    session.clear()
+
+
+@app.context_processor
+def inject_user():
+  #TODO: Test om dette crasher ved static calls
+  return dict(current_user=g.user)
+
+
 def login_required(f):
+  """
+  Decorator to require authentication.
+  Just checks if g.user is authenticated since g.user is
+  always set before this decorator is called.
+  """
   @wraps(f)
   def decorated_function(*args, **kwargs):
-    token = session.get("session_token")
-    
-    if not token:
+    if not g.user["is_authenticated"]:
       flash("Please log in", "warning")
       return redirect(url_for("login"))
-    
-    # Validate session with auth service
-    response = requests.get(f"{AUTH_API}/sessions", params={"session_token": token})
-
-    if not response.ok:
-      session.clear() # Invalid session
-      flash("Session expired, please log in again", "warning")
-      return redirect(url_for("login"))
-    
-    # Token matches an active session - user is authenticated
     return f(*args, **kwargs)
   return decorated_function
 
@@ -78,14 +108,9 @@ def role_required(role_name):
     @wraps(f)
     @login_required   # Also requires login
     def decorated_function(*args, **kwargs):
-      # Get the users role from session (just checked user is authenticated with @login_required)
-      user_role = session.get("role")
-      
-      if user_role != role_name:
+      if g.user["role"] != role_name:
         flash(f"Access denied.", "error")
         return redirect(url_for("landing"))
-      
-      # User has required role
       return f(*args, **kwargs)
     return decorated_function
   return decorator
@@ -142,14 +167,9 @@ def login():
       Response | str: Redirect to home or render login template
   """
   # ---- Check if user already has an active session ----
-  # Get the current session cookie from browser
-  token = session.get('session_token')
-  if token:
-    # Check if token matches an active session
-    response = requests.get(f"{AUTH_API}/sessions", params={"session_token": token})
-    # If it does user is already logged in
-    if response.status_code == 200:
-      flash("already logged in")
+  # We already checked with auth service when setting g object so we just check this.
+  if g.user["is_authenticated"]:
+      flash("Already logged in", "info")
       return redirect(url_for("landing")) # TODO: Kan man lave noget nice hvor man redirectes tilbage til hvor man var inden man blev sendt til login
   
   # ---- User does NOT have an active session, need to login ----
@@ -174,7 +194,7 @@ def login():
       flash(response.json().get("error", "Login failed"), "error")
   
   # Render login site
-  return render_template('login.html', form=form)
+  return render_template('auth/login.html', form=form)
   
 
 
@@ -187,9 +207,10 @@ def register():
   Returns:
       Response | str: Redirect to dashboard or render regisration page
   """
-
-  # TODO: Overvej at kontrollere hvorvidt en bruger allerede er logget ind
-    # -> hvis ikke vi gør dette kan en bruger registrere en ny konto mens de er logget ind
+  # Can't register while already logged in
+  if g.user["is_authenticated"]:
+    flash("Already logged in", "info")
+    return redirect(url_for("landing")) # TODO: Kan man lave noget nice hvor man redirectes tilbage til hvor man var inden man blev sendt til login
 
   form = RegistrationForm(request.form)
   if request.method == 'POST' and form.validate():
@@ -204,17 +225,17 @@ def register():
       session["role"] = data["role"]
       session["session_token"] = data["session_token"]
       flash("Registration successful", "success")
-      return redirect(url_for('home')) # TODO: Kan man lave noget nice hvor man redirectes tilbage til hvor man var inden man blev sendt til register
+      return redirect(url_for('landing')) # TODO: Kan man lave noget nice hvor man redirectes tilbage til hvor man var inden man blev sendt til register
     else:
       flash("Registration failed", "error")
   
   # Render registration page
-  return render_template('register.html', form=form)
+  return render_template('auth/register.html', form=form)
 
 
-@app.route('/logout', methods=['POST'])
+@app.route('/logout', methods=['GET', 'POST'])
 @login_required
-def logout_view():
+def logout():
   """
   Log out user by asking auth to delete session entry.
 
@@ -246,7 +267,7 @@ def profile():
   Returns:
       str: The profile page with seeker's profile info if any
   """
-  user_id = session.get("user_id")
+  user_id = session.get("user_id") # Safe because @role_required ensures user is authenticated
   
   response = requests.get(f"{PROFILE_API}/profiles/{user_id}")
   
@@ -259,7 +280,7 @@ def profile():
     profile = {} # TODO: Pre-populate data here if any? (default data)
   
   form = ProfileForm(data=profile)
-  return render_template("profile.html", form=form)
+  return render_template("profiles/profile.html", form=form)
   
   
 @app.route("/profile", methods=['POST'])
@@ -272,7 +293,7 @@ def create_or_update_profile(): #TODO: Cleanup return statements
   Returns:
       Response | str: The profile page #TODO: redirect er jo måske lidt ligegyldig?
   """
-  user_id = session.get("user_id")  # Safe because we @role_required ensures user is authenticated
+  user_id = session.get("user_id") # Safe because @role_required ensures user is authenticated
   form = ProfileForm(request.form)
   
   if form.validate():
@@ -293,13 +314,13 @@ def create_or_update_profile(): #TODO: Cleanup return statements
     else:
       flash("Error saving profile", "error")
       # Reload site with profile data so user can just press save again without losing changes
-      return render_template("profile.html", form=form)
+      return render_template("profiles/profile.html", form=form)
   else:
     flash("Invalid input", "error")
-    return render_template("profile.html", form=form)
+    return render_template("profiles/profile.html", form=form)
 
 
 # COLLECTIVE ROUTES ------------------------------------------------------------------
-@app.route("/overview", methods=["GET"])
-def overview():
+@app.route("/collectives", methods=["GET"])
+def collectives_index():
   pass

@@ -600,7 +600,6 @@ def landing():
 
   # Denne her kan godt gøres mere nice.
   selected_entries = Collective.get_all()[0:3] # Hmm, dette burde være 4, men render 3.
-
   return render_template("landingpage.html", selected_entries=selected_entries)
 
 @app.route("/login", methods=('GET','POST'))
@@ -670,7 +669,7 @@ def logout():
     identity_changed.send(current_app._get_current_object(),
                           identity=AnonymousIdentity())
     
-    return redirect(url_for('login'))
+    return redirect(url_for('landing'))
 
 @app.route("/collectives", methods=["GET"])
 def collectives_index():

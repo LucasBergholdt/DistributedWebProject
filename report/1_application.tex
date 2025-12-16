@@ -1,1 +1,25 @@
 \section{Application: Kollektivportalen.dk}
+
+\subsection{Introduction to the service and problem domain}
+Our web service, "Kollektivportalen.dk", provides a portal for matching seekers of collectives with providers of collectives. 
+Collective housing, in danish known as "Kollektiv", is a variant of co-living, where individuals share the same living space, such as an apartment or a house. 
+Not only the space is shared, but also other fixed monthly expenses such as electricity and heat.
+Our idea originally came from the fact that no web service in Denmark currently solves this problem. The problem domain of finding or distributing a collective in Denmark is un-organized and characterized by the lack of one single source of data. Usually one would advertise in designated social media groups for a specific city, or on general housing services. 
+Importantly, our implementation has been done in the spirit of considering how we realistically would solve such a problem and acts as a prototype for our Innovation Project.
+
+Technically speaking our problem domain is therefore a CRUD-application in the context of role-based management of user capabilities.
+Our general design revolves around two distinct user groups, the seeker of a collective and the provider of a collective. The goal of our service is to provide an intuitive interface for both parties, that allows the seekers to easily find collectives of their preference, or, of same importance, to discover new previously unknown collectives, and to allow providers to easily advertise their collective, gain applications and also be inspired by other collectives.
+
+An important functionality in regards to the business aspect is the ability for all users, even anonymous ones, to browse potential collectives. 
+We want to make potential users able to quickly gain an overview of possible collectives, to motivate seekers to create an account and motivate potential providers to offer their own living solution by being inspired of what is currently available. 
+This is what justifies design decisions throughout our implementation, such as the searchbar on the landing page, and the ability to apply a filter when searching for collectives.
+
+Our current implementation has a landing page, role-based authentication and access, a profile page, the ability to update personal information, an overview of all collectives via a persistent database, the ability to filter data in the overview and the ability to create new entries in the database as a provider. 
+Important functionality we are ready for, but have not implemented, is the ability of seekers to apply for a collective, and in extension, the ability for the seeker to see the collectives applied for, and therefore also for the providers to see and evaluate upon recieved applications. 
+The sending and reviewing of applications is an important part of our problem domain, as each collective traditionally has their own distinctive procedure for deciding upon new members. Each collective is free to decide on this procecure outside of our service, and the decision-making process has been made easier by the profile data and application from the seeker provided by our service. 
+
+
+
+\subsection{High-level overview}
+
+

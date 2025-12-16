@@ -1,0 +1,2 @@
+Måske få forklaret hvorfor vi har valgt en approach med providers vs seekers i stedet for den generelle "user"-approach, som kan det hele.
+Fordele og ulemper ved dete valg. 

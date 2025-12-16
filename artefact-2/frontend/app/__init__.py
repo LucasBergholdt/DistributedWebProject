@@ -2,7 +2,7 @@ from datetime import date
 from functools import wraps
 import os
 import requests
-from wtforms import DateField, Form, RadioField, SelectField, StringField, SubmitField, EmailField, PasswordField, BooleanField, TextAreaField
+from wtforms import DateField, Form, IntegerField, RadioField, SelectField, StringField, SubmitField, EmailField, PasswordField, BooleanField, TextAreaField
 from wtforms.validators import DataRequired, Email, EqualTo, Optional, Length
 from flask import Flask, g, redirect, render_template, request, session, url_for, flash
 from flask_wtf import FlaskForm
@@ -48,6 +48,12 @@ class ProfileForm(FlaskForm):
   image = FileField("Profile picture", validators=[FileRequired()])
   submit = SubmitField('Save Profile')
 
+# WTForms for the collective filter
+class SearchForm(FlaskForm):
+  city = StringField('Filter by city', validators=[Length(min=1, max=80, message='You cannot have less than 1 or more than 80 characters')])
+  roomsize = IntegerField('Size of room')
+  price = IntegerField('Price in DKK')
+  submit = SubmitField('Search')
 
 # DECORATORS ----------------------------------------------------------------------
 
@@ -127,8 +133,10 @@ def landing():
       str: Homepage template
   """
   response = requests.get(f"{COLLECTIVES_API}/collectives")
-  selected_entries = response.json()[0:3]
-  
+  if response.ok:
+    selected_entries = response.json()[0:3]
+  else:
+    selected_entries = {}
   return render_template("landingpage.html", selected_entries=selected_entries)
 
 
@@ -280,7 +288,7 @@ def profile():
     profile = {} # TODO: Pre-populate data here if any? (default data)
   
   form = ProfileForm(data=profile)
-  return render_template("profiles/profile.html", form=form)
+  return render_template("profiles/seeker.html", form=form)
   
   
 @app.route("/profile", methods=['POST'])
@@ -314,13 +322,53 @@ def create_or_update_profile(): #TODO: Cleanup return statements
     else:
       flash("Error saving profile", "error")
       # Reload site with profile data so user can just press save again without losing changes
-      return render_template("profiles/profile.html", form=form)
+      return render_template("profiles/seeker.html", form=form)
   else:
     flash("Invalid input", "error")
-    return render_template("profiles/profile.html", form=form)
+    return render_template("profiles/seeker.html", form=form)
 
 
 # COLLECTIVE ROUTES ------------------------------------------------------------------
 @app.route("/collectives", methods=["GET"])
 def collectives_index():
+  """
+  Overview of all collectives. 
+  Can be accessed by all roles, even anonymous. 
+  User can apply filter.
+  """
+  
+  filters = SearchForm(request.args)
+
+  # detect if filter has been applied
+  params = {}
+  if request.args:
+    if filters.city.data:
+      params['city'] = filters.city.data.capitalize() # todo: ingen capitalize i monolit?
+    if filters.price.data:
+      params['price'] = filters.price.data
+    if filters.roomsize.data:
+      params['roomsize'] = filters.roomsize.data
+  
+  # Apply filter by passing along the parameters with the request.
+    response = requests.get(f"{COLLECTIVES_API}/collectives", params=params)
+    if response.ok:
+      data = response.json()
+      if params: 
+        flash(f"Filters: {filters.city.data}, {filters.price.data}, {filters.roomsize.data} applied", "success")  
+  
+  # Or get all. 
+  else: 
+    response = requests.get(f"{COLLECTIVES_API}/collectives")
+    if response.ok:
+      data = response.json()
+    else:
+      data={}
+
+  return render_template("collectives/index.html", collective_entries=data, form=filters)
+    
+    
+@app.route("/collectives/<int:id>", methods=["GET"])
+def collectives_view(id):
   pass
+  # entry = Collective.get_by_id(id)
+  # return render_template("collectives/view.html", entry=entry)

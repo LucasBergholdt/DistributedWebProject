@@ -10,9 +10,9 @@ services:
       - COLLECTIVES_API_URL=http://collectives:5000
       - PROFILE_API_URL=http://profile:5000
     #TODO: FOR DEBUGGING
-    volumes:                    # debug
-      - ./frontend:/app         # debug
-    command: flask run --debug  # debug
+    # volumes:                    # debug
+    #   - ./frontend:/app         # debug
+    # command: flask run --debug  # debug
     depends_on:
       - auth
       - collectives
@@ -24,9 +24,9 @@ services:
     environment:
       - DATABASE_URL=postgresql://postgres:postgres@db:5432/postgres
     #TODO: FOR DEBUGGING
-    volumes:                    # debug
-      - ./auth:/app             # debug
-    command: flask run --debug  # debug
+    # volumes:                    # debug
+    #   - ./auth:/app             # debug
+    # command: flask run --debug  # debug
     depends_on:
       - db
   
@@ -37,9 +37,9 @@ services:
     environment:
       - DATABASE_URL=postgresql://postgres:postgres@db:5432/postgres
     #TODO: FOR DEBUGGING
-    volumes:                    # debug
-      - ./collectives/:/app     # debug
-    command: flask run --debug  # debug
+    # volumes:                    # debug
+    #   - ./collectives/:/app     # debug
+    # command: flask run --debug  # debug
     depends_on:
       - db
 
@@ -50,9 +50,9 @@ services:
     environment:
       - DATABASE_URL=postgresql://postgres:postgres@db:5432/postgres
     #TODO: FOR DEBUGGING
-    volumes:                    # debug
-      - ./profile/:/app     # debug
-    command: flask run --debug  # debug
+    # volumes:                    # debug
+    #   - ./profile/:/app     # debug
+    # command: flask run --debug  # debug
     depends_on:
       - db
 

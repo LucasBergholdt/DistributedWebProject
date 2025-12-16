@@ -301,8 +301,7 @@ class SeekerProfile(db.Model):
         # User needs to explicitly delete profile picture if they want that.
 
         db.session.commit()
-      
-      
+
 class Collective(db.Model):
     __tablename__ = 'collectives'
 
@@ -316,7 +315,7 @@ class Collective(db.Model):
     price = db.Column(db.Integer())
 
     description = db.Column(db.String(500))
-    image = db.Column(db.String(500))
+    image = db.Column(db.String(500))   #image name.
   
     # Many-One relationship between Collective and User
     user = db.relationship("User", back_populates="collectives")
@@ -673,43 +672,6 @@ def logout():
     
     return redirect(url_for('login'))
 
-""" LAYOUT OF WEBPAGE:
-
-
-Seekers:
-  GET: /seeker. 
-    - Displays all Collectives by their address (and PrimaryID?). Has a "apply" next to them.
-    - Displays all your Applications (by ApplicationID and CollectiveAddress)
-  GET: /apply/<int:id>: Applies for a specific collective. Displays application form.
-  POST: /apply/<int:id>: Sends application form and redirects to seeker URL.
-
-Providers:
-  GET: /provider. 
-      - Displays all Applications assigned to your collectives (collectives with your ID on).
-      - Displays all your collectives.
-      - Offers you to construct new collective. /newCollective
-
-  GET: /newCollective.
-      - Displays CollectiveForm.
-  POST: /newCollective.
-      - Uploads database and redirects to /provider.
-"""
-
-## GAMMMEL "SEEKER" TILGANG
-# @app.route("/seeker",methods=["GET","POST"])  #TODO: Fjern POST? Bruges ikke.
-# @login_required
-# @seeker_permission.require()
-# @app.route("/home",methods=["GET"])
-# def home():
-#   if not (current_user.is_authenticated):
-#      return redirect(url_for("login"))
-#   elif (current_user.role == "seeker"): 
-#      return redirect(url_for("seeker"))
-#   else:
-#      return redirect(url_for("provider"))
-
-
-
 @app.route("/collectives", methods=["GET"])
 def collectives_index():
     form = SearchForm(formdata=request.args)
@@ -723,13 +685,6 @@ def collectives_index():
         )
     else:
        collective_entries = Collective.get_all()
-
-    # TODO: HVIS LOGGET IND --- implementer yderligere!!
-    # E.G ABILITY TO APPLY BASED ON ROLE
-
-     #  your_applications = current_user.applications
-      # Collective.get_by_submitter(current_user.id)
-      # som argument: your_applications=your_applications
       
     return render_template("collectives/index.html", collective_entries=collective_entries, form=form)
 
@@ -742,40 +697,20 @@ def collectives_view(id):
 
 @app.route("/collectives/delete/<int:id>", methods=["POST"])
 def collectives_delete(id):
+    """ 
+    Deletes a collective entry. Method is POST because HTML cannot send DELETE requests. 
+    """
     entry = Collective.get_by_id(id)
     if entry:
         db.session.delete(entry)
         db.session.commit()
+        delete_picture(entry.image)
+
         #TODO: Delete corresponding picture in database.
-        flash("Collective deleted.","success") # Skal vi egentlig overveje at fjerne disse? Ikke så "pro"
+        flash("Collective deleted.","success")
     else:
        flash("Sorry, we couldn't find the collective that you wanted to delete.", 'warning')
     return redirect(url_for('provider_collectives'))
-
-
-
-"""
-# Only Providers can do this. Security Flaw: Providers can remove another provider's collective.
-@login_required
-@provider_permission.require()
-@app.route("/delete_collective/<int:id>")
-def delete_collective(id):
-  collective = Collective.query.filter_by(id=id).first()
-  if collective:
-      # Delete all applications directed to this collective and the collective itself.
-      for app in collective.applications:
-        db.session.delete(app)
-      db.session.delete(collective)
-      db.session.commit()
-      msg = collective.address + " and all corresponding applications has been deleted."
-      flash(msg, 'info')
-
-  else:
-    flash("Sorry, we couldn't find the collective that you wanted to delete.", 'warning')
-  return redirect(url_for('provider_collectives'))
-"""
-
-
 
 @app.route("/profile",methods=["GET"])
 @login_required
@@ -825,8 +760,6 @@ def put_profile():
 @login_required
 @provider_permission.require()
 def provider_collectives():
-    # Get all collectives that Provider owns. Done directly by accessing foreign keys.
-    # evt. anvend user.collectives (vha. db.relationship())
     collective_entries = Collective.get_by_submitter(current_user.id)
   
     # Get all applications mapped to these collectives.
@@ -866,7 +799,39 @@ def collectives_create():
 
 
 
+# ------------ Old Routes ------------------
 
+# Both seekers and providers can do this now. Security Flaw: Providers can remove another provider's application. Same goes for seekers.
+@login_required
+@app.route("/delete_application/<int:id>")
+def delete_application(id):
+    application = Application.query.filter_by(id=id).first()
+    if application:
+        db.session.delete(application)
+        db.session.commit()
+        flash("Application has been deleted.", 'info')
+    else:
+      flash("Sorry, we couldn't find the application that you wanted to delete.", 'warning')
+    return redirect(url_for(current_user.role))
+
+
+# Not used:
+@app.route("/apply/<int:id>", methods=["GET", "POST"])
+@login_required
+@seeker_permission.require()
+def apply(id):
+  """For applying to a collective.
+  """
+  form = ApplicationForm(request.form)
+  if request.method == 'POST' and form.validate():
+      Application.create_application(current_user.id, id, form.description.data)
+      return redirect(url_for("seeker"))
+  return render_template("apply.html", form=form)
+
+
+
+"""
+Old Code that might be useful later
 
 
 
@@ -898,36 +863,4 @@ def delete_collective(id):
 
 
 
-
-
-
-
-
-# ------------ Old Routes ------------------
-
-# Both seekers and providers can do this now. Security Flaw: Providers can remove another provider's application. Same goes for seekers.
-@login_required
-@app.route("/delete_application/<int:id>")
-def delete_application(id):
-    application = Application.query.filter_by(id=id).first()
-    if application:
-        db.session.delete(application)
-        db.session.commit()
-        flash("Application has been deleted.", 'info')
-    else:
-      flash("Sorry, we couldn't find the application that you wanted to delete.", 'warning')
-    return redirect(url_for(current_user.role))
-
-
-# Not used:
-@app.route("/apply/<int:id>", methods=["GET", "POST"])
-@login_required
-@seeker_permission.require()
-def apply(id):
-  """For applying to a collective.
-  """
-  form = ApplicationForm(request.form)
-  if request.method == 'POST' and form.validate():
-      Application.create_application(current_user.id, id, form.description.data)
-      return redirect(url_for("seeker"))
-  return render_template("apply.html", form=form)
+"""

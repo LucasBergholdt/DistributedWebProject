@@ -755,7 +755,6 @@ def put_profile():
         flash("Invalid input", "error")
         return render_template("profiles/seeker.html", form=form, profile=profile)
 
-
 @app.route("/provider/collectives",methods=["GET","POST"])
 @login_required
 @provider_permission.require()

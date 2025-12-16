@@ -8,8 +8,8 @@
         <img src="{{ url_for('static', filename='images/' ~ entry.image) }}" class="border img-fluid rounded collectivepage" alt="Responsive image">
     </div>
     <div class="container">
-        <div class="row">
-            <div class="container col-8 mb-5">
+        <div class="row mb-4">
+            <div class="container col-8">
                 <!-- Header -->
                 <h1 class="mb-2">
                     {{ entry.roomsize }} m<sup>2</sup> room available for {{ entry.price }} DKK a month
@@ -18,13 +18,17 @@
                     {{ entry.street }}, {{ entry.city }}
                 </h2>
             </div>
-            <div class="container col-4">
+            <div class="container col-4 d-flex justify-content-center align-items-center">
                 <!-- Button -->'
-            {% if current_user.role == "seeker" %}
-                <a class="btn btn-primary btn-lg" href="#" role="button">Apply</a>
-            {% else %}
-                <a class="btn btn-primary btn-lg" href="{{ url_for('collectives_index') }}" role="button">Go back</a>
-            {% endif %}
+                    {% if current_user.role == "seeker" %}
+                        <div>
+                        <a class="btn btn-primary btn-lg" href="#" role="button">Apply</a>
+                        </div>
+                    {% else %}
+                        <div>
+                        <a class="btn btn-primary btn-lg" href="{{ url_for('collectives_index') }}" role="button">Go back</a>
+                        </div>
+                    {% endif %}
             </div>
         </div>
         <div class="w-50">

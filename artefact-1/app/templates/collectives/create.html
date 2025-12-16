@@ -1,4 +1,4 @@
-{% extends 'base.html' %}
+{% extends 'elements/base.html' %}
 
 {% block body%}
 
@@ -32,6 +32,7 @@
       <div class="form-group mb-3">
         {{ form.image.label(class="form-label", for="image") }}
         {{ form.image(class="form-control", id="image")}}
+      <small id="roomsizeHelp" class="form-text text-muted">We accept JPG, PNG or GIF.</small>
       </div class="mb-3">
       {{ form.submit(class="form-control") }}
     </form>

@@ -1,0 +1,41 @@
+{% extends 'elements/base.html' %}
+
+{% block body%}
+
+<section class="container">
+  <div container="container-fluid">
+    <h2 class="my-4 mx-4">
+      Submit a new collective</a>
+    </h2>
+    <form method="post" enctype="multipart/form-data">
+      {{ form.hidden_tag()}}  <!-- Flask WT-Forms security feature -->
+      <div class="form-floating mb-3">
+        {{ form.city(class="form-control", id="city", placeholder="present") }} <!-- Placeholder needs to be declared for bootstrap to use -->
+        {{ form.city.label(for="city") }}
+      </div>
+      <div class="form-floating mb-3">
+        {{ form.street(class="form-control", id="street", placeholder="present") }}
+        {{ form.street.label(class="form-label") }}
+      </div>  
+      <div class="form-floating mb-3">
+        {{ form.price(class="form-control", id="price", placeholder="present") }}
+        {{ form.price.label(class="form-label") }}
+      </div>
+      <div class="form-floating mb-3">
+        {{ form.roomsize(class="form-control", id="roomsize", placeholder="present") }}
+        {{ form.roomsize.label(class="form-label") }}
+      </div>
+      <div class="form-floating mb-3">
+        {{ form.description(class="form-control", id="description", placeholder="present", style="height: 150px") }}
+        {{ form.description.label(class="form-label") }}
+      </div>
+      <div class="form-group mb-3">
+        {{ form.image.label(class="form-label", for="image") }}
+        {{ form.image(class="form-control", id="image")}}
+      <small id="roomsizeHelp" class="form-text text-muted">We accept JPG, PNG or GIF.</small>
+      </div class="mb-3">
+      {{ form.submit(class="form-control") }}
+    </form>
+  </div>
+</section>
+{% endblock body%}

@@ -632,7 +632,7 @@ def login():
             else:
                 # Otherwise, display an error message and display the login form again
                 flash("Invalid credentials","error")
-        return render_template('login.html', form=form)
+        return render_template('auth/login.html', form=form)
 
 @app.route("/register", methods=('GET','POST'))
 def register():
@@ -655,7 +655,7 @@ def register():
       return redirect(url_for('landing'))
     # elif request.method == 'POST':
     #     flash("post bracket entered but form not validated.","Debug:")  # Only for debug purposes.
-    return render_template('register.html', form=form)
+    return render_template('auth/register.html', form=form)
 
 @app.route('/logout', methods=['GET'])
 @login_required
@@ -709,14 +709,13 @@ Providers:
 #      return redirect(url_for("provider"))
 
 
-# ------------------------- Seeker Routes ---------------------------------
-@app.route("/overview", methods=["GET"])
-def overview():
-    form = SearchForm(formdata=request.args)
 
+@app.route("/collectives", methods=["GET"])
+def collectives_index():
+    form = SearchForm(formdata=request.args)
+       
     # if any arguments is given to URL
     if (request.args):
-       flash("Debug!")
        collective_entries = Collective.get_by_filters(
            form.city.data,
            form.roomsize.data,
@@ -732,12 +731,14 @@ def overview():
       # Collective.get_by_submitter(current_user.id)
       # som argument: your_applications=your_applications
       
-    return render_template("overview.html", collective_entries=collective_entries, form=form)
+    return render_template("collectives/index.html", collective_entries=collective_entries, form=form)
 
-@app.route("/collective_details/<int:id>", methods=["GET","POST"])
-def collective_details(id):
+
+@app.route("/collectives/<int:id>", methods=["GET"])
+def collectives_view(id):
     entry = Collective.get_by_id(id)
-    return render_template("collective_details.html", entry=entry)
+    return render_template("collectives/view.html", entry=entry)
+
 
 @app.route("/profile",methods=["GET"])
 @login_required
@@ -747,8 +748,7 @@ def profile():
     
     form = ProfileForm(obj=profile)
     
-    return render_template("seekerprofile.html", form=form, profile=profile)
-  
+    return render_template("profiles/seeker.html", form=form, profile=profile)
   
 @app.route("/profile",methods=["POST"])
 @login_required
@@ -781,14 +781,13 @@ def put_profile():
     else:
         # Reload site with the form data so user doesn't have to start all over if they input something invalid
         flash("Invalid input", "error")
-        return render_template("seekerprofile.html", form=form, profile=profile)
+        return render_template("profiles/seeker.html", form=form, profile=profile)
 
 
-# ------------------------- Provider Routes ---------------------------------
-@app.route("/provider",methods=["GET","POST"])
+@app.route("/provider/collectives",methods=["GET","POST"])
 @login_required
 @provider_permission.require()
-def provider():
+def provider_collectives():
     # Get all collectives that Provider owns. Done directly by accessing foreign keys.
     # evt. anvend user.collectives (vha. db.relationship())
     collective_entries = Collective.get_by_submitter(current_user.id)
@@ -799,12 +798,12 @@ def provider():
     #  for collective in collective_entries
     #    for application in collective.applications  #relationship() anvendes.
     #]
-    return render_template("provider.html", collective_entries=collective_entries)
+    return render_template("profiles/provider.html", collective_entries=collective_entries)
 
-@app.route("/new_collective", methods=["GET", "POST"])
+@app.route("/collectives/create", methods=["GET", "POST"])
 @login_required
 @provider_permission.require()
-def new_collective():
+def collectives_create():
   form = CollectiveForm()
 
   if form.validate_on_submit():
@@ -824,8 +823,19 @@ def new_collective():
           form.description.data,
           filename
           )
-      return redirect(url_for("provider"))
-  return render_template("new_collective.html", form=form)
+      return redirect(url_for("provider_collectives"))
+  return render_template("collectives/create.html", form=form)
+
+
+
+
+
+
+
+
+
+
+
 
 # Only Providers can do this. Security Flaw: Providers can remove another provider's collective.
 @login_required
@@ -844,10 +854,19 @@ def delete_collective(id):
 
   else:
     flash("Sorry, we couldn't find the collective that you wanted to delete.", 'warning')
-  return redirect(url_for('provider'))
+  return redirect(url_for('provider_collectives'))
 
 
-# ------------ Routes for both roles ------------------
+
+
+
+
+
+
+
+
+
+# ------------ Old Routes ------------------
 
 # Both seekers and providers can do this now. Security Flaw: Providers can remove another provider's application. Same goes for seekers.
 @login_required

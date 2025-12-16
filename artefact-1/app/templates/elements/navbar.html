@@ -18,7 +18,7 @@
 
             <ul class="navbar-nav"> <!-- Left is default -->
                 <li class="nav-item">
-                    <a class="nav-link" href="{{ url_for('overview') }}">Overview of all collectives</a>
+                    <a class="nav-link" href="{{ url_for('collectives_index') }}">Overview of all collectives</a>
                 </li>
                 {% if current_user.role == "seeker" %}
                 <li class="nav-item">
@@ -27,7 +27,7 @@
                 {% endif %}
                 {% if current_user.role == "provider" %}
                 <li class="nav-item">
-                    <a class="nav-link link-light" href="{{ url_for('new_collective') }}">Create new collective</a>
+                    <a class="nav-link link-light" href="{{ url_for('provider_collectives') }}">Your Collectives </a>
                 </li>
                 {% endif %}
             </ul>

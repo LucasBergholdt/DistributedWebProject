@@ -1,4 +1,4 @@
-{% extends 'base.html' %}
+{% extends 'elements/base.html' %}
 
 {% block body%}
 <main class="container my-5">
@@ -23,6 +23,7 @@
 
                 {{ form.image(class="visually-hidden", accept="image/*", aria_describedby="imageHelp") }}
             </label>
+            
             <div id="imageHelp" class="form-text mt-2">Click the picture to upload a new one.<br> 
                 We accept JPG, PNG or GIF.
             </div>

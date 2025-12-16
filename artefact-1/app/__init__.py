@@ -740,6 +740,43 @@ def collectives_view(id):
     return render_template("collectives/view.html", entry=entry)
 
 
+@app.route("/collectives/delete/<int:id>", methods=["POST"])
+def collectives_delete(id):
+    entry = Collective.get_by_id(id)
+    if entry:
+        db.session.delete(entry)
+        db.session.commit()
+        #TODO: Delete corresponding picture in database.
+        flash("Collective deleted.","success") # Skal vi egentlig overveje at fjerne disse? Ikke så "pro"
+    else:
+       flash("Sorry, we couldn't find the collective that you wanted to delete.", 'warning')
+    return redirect(url_for('provider_collectives'))
+
+
+
+"""
+# Only Providers can do this. Security Flaw: Providers can remove another provider's collective.
+@login_required
+@provider_permission.require()
+@app.route("/delete_collective/<int:id>")
+def delete_collective(id):
+  collective = Collective.query.filter_by(id=id).first()
+  if collective:
+      # Delete all applications directed to this collective and the collective itself.
+      for app in collective.applications:
+        db.session.delete(app)
+      db.session.delete(collective)
+      db.session.commit()
+      msg = collective.address + " and all corresponding applications has been deleted."
+      flash(msg, 'info')
+
+  else:
+    flash("Sorry, we couldn't find the collective that you wanted to delete.", 'warning')
+  return redirect(url_for('provider_collectives'))
+"""
+
+
+
 @app.route("/profile",methods=["GET"])
 @login_required
 @seeker_permission.require()

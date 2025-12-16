@@ -35,10 +35,13 @@
         <li class="list-group-item">{{ entry.roomsize }} square meters</li>
         <li class="list-group-item">{{ entry.price }} DKK</li>
       </ul>  
-      <div class="card-body">
-        <a href="#" class="card-link">Edit</a>
-        <a href="#" class="card-link">Delete</a>
-        <a href="#" class="card-link">View Applications</a>
+      <div class="card-body row">
+        <form class="col-6 d-flex justify-content-center" method="post" action="{{ url_for('collectives_delete', id=entry.id) }}">
+          <button type="submit" class="btn btn-outline-primary">Delete</button>
+        </form>
+        <form class="col-6 " method="get" action="#">
+          <button type="submit" class="btn btn-outline-primary">Apply</button>
+        </form>
       </div>
     </div>
     {% endfor %}

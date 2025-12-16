@@ -777,13 +777,6 @@ def collectives_create():
   form = CollectiveForm()
 
   if form.validate_on_submit():
-      f = form.image.data
-      filename = secure_filename(f.filename)
-      filepath = os.path.join(
-          app.config['UPLOAD_FOLDER'], filename
-      )
-      f.save(filepath)
-
       Collective.create_collective(
           current_user.id, 
           form.city.data,
@@ -791,12 +784,10 @@ def collectives_create():
           form.roomsize.data,
           form.price.data,
           form.description.data,
-          filename
-          )
+          save_image(form.image.data)
+        )
       return redirect(url_for("provider_collectives"))
   return render_template("collectives/create.html", form=form)
-
-
 
 
 # ------------ Old Routes ------------------

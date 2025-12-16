@@ -33,6 +33,11 @@ class Collective(db.Model):
     def get_all():
         """Get all Collectives"""
         return Collective.query.order_by(Collective.id).all()
+    
+    @staticmethod
+    def get_by_id(id):
+        """Get collective by their ID"""
+        return Collective.query.filter_by(id=id).first()
 
     @staticmethod
     def get_by_submitter(user_id):
@@ -49,7 +54,7 @@ class Collective(db.Model):
         """Get all Collectives which cityname has given argument as prefix)"""
         return Collective.query.filter(Collective.city.startswith(city)).all()
     
-    def get_by_filters(city, roomsize, price):
+    def get_by_filters(city=None, roomsize=None, price=None, submitter_id=None):
         """Filters collectives by multiple filters."""
         # Fetch all queries.
         query = Collective.query
@@ -57,17 +62,17 @@ class Collective(db.Model):
         # Filter step-by-step
         if city:
             query = query.filter(Collective.city.startswith(city))
-
         if roomsize:
             query = query.filter(Collective.roomsize >= roomsize)
-
         if price:
             query = query.filter(Collective.price <= price)
-
+        if submitter_id:
+            query = query.filter_by(submitter_id=submitter_id)
+            
         return query.all()
 
     @classmethod
-    def create_collective(cls, submitter_id, city, street, roomsize, price, description,image):
+    def create_collective(cls, submitter_id, city, street, roomsize, price, description, image):
       """
       Create a new collective with the provided details.
 
@@ -91,6 +96,27 @@ class Collective(db.Model):
       db.session.add(collective)
       db.session.commit()
       return collective
+  
+    
+    def to_dict(self):
+        """
+        Convert the Collective object into a plain Python dictionary,
+        making it easy to convert into JSON for HTTP responses.
+
+        Returns:
+            dict: Collective details in dictionary
+        """
+        return {
+            "id": self.id,
+            "city": self.city,
+            "street": self.street,
+            "roomsize": self.roomsize,
+            "price": self.price,
+            "description": self.description,
+            "image": self.image
+        }
+  
+  
     
 
 
@@ -129,35 +155,17 @@ def get_collectives():
     city = request.args.get("city")
     price = request.args.get("price", type=int)
     roomsize = request.args.get("roomsize", type=int)
-    # submitter_id = filter.submitter_id
+    submitter_id = request.args.get("submitter_id", type=int)
 
-    # if submitter_id is not None:
-    #     collectives = Collective.get_by_submitter(submitter_id)
-    # city = filters.get("city")
-    # price = filters.get("price")
-    # roomsize = filters.get("roomsize")
-
-    if city or price or roomsize:
-        collectives = Collective.get_by_filters(city, roomsize, price)
-
-    else:
-        collectives = Collective.get_all()
+    collectives = Collective.get_by_filters(city, roomsize, price, submitter_id)
     
-    return jsonify([{
-    "id": e.id, 
-    "submitter_id": e.submitter_id, 
-    "city": e.city,
-    "street": e.street,
-    "price": e.price,
-    "description": e.description,
-    "roomsize": e.roomsize,
-    "image": e.image}
-    for e in collectives]), 200  # returns list of json objects
+    return jsonify([e.to_dict() for e in collectives]), 200  # returns list of json objects
+
 
 @app.route("/collectives", methods=["POST"])
 def post_collectives():
-    data = request.get_json()   #fetch json objekt med info
-
+    # Get data from request
+    data = request.get_json()
     submitter_id = data.get('submitter_id')
     city = data.get('city')
     street = data.get('street')
@@ -166,7 +174,7 @@ def post_collectives():
     roomsize = data.get('roomsize')
     image = data.get('image')
 
-    if not submitter_id or not price or not city or not street or not roomsize or not image:
+    if not all([submitter_id, price, city, street, description, roomsize, image]): # works because None = False
         return jsonify({"error": "Missing data"}), 400
 
     collective = Collective.create_collective(
@@ -178,12 +186,17 @@ def post_collectives():
         roomsize,
         image
     )
-    db.session.add(collective)
-    db.session.commit()
-    return jsonify({"id": collective.id}), 201  #TODO return whole collective object like in ToDo example?
+    return jsonify({collective.to_dict()}), 201
 
 
-
+@app.route("/collectives/<int:id>", methods=["GET"])
+def view_collective(id):
+    entry = Collective.get_by_id(id)
+    if entry:
+        return jsonify(entry.to_dict()), 200
+    else:
+        return jsonify({"error": "Collective not found"}), 404
+    
 
 
 

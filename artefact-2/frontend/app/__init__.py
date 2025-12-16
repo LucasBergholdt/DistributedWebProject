@@ -54,6 +54,15 @@ class SearchForm(FlaskForm):
   roomsize = IntegerField('Size of room')
   price = IntegerField('Price in DKK')
   submit = SubmitField('Search')
+  
+class CollectiveForm(FlaskForm):
+  city = StringField('Name of city', validators=[DataRequired(), Length(min=1, max=80, message='You cannot have less than 1 or more than 80 characters')])
+  street = StringField('Name of street', validators=[DataRequired(), Length(min=1, max=80, message='You cannot have less than 1 or more than 80 characters')])
+  roomsize = IntegerField('Size of the room available (square meters)', validators=[DataRequired()])
+  price = IntegerField('Price in DKK', validators=[DataRequired()])
+  description = TextAreaField('Describe your collective', validators=[DataRequired(), Length(min=1, max=300, message='You cannot have less than 1 or more than 300 characters')])
+  image = FileField(validators=[FileRequired()])
+  submit = SubmitField('Register your collective')
 
 # DECORATORS ----------------------------------------------------------------------
 
@@ -138,25 +147,6 @@ def landing():
   else:
     selected_entries = {}
   return render_template("landingpage.html", selected_entries=selected_entries)
-
-
-@app.route("/dashboard")
-def dashboard(): #TODO: DON'T THINK THIS WILL EVER BE USED WITH NEW LANDING PAGE APPROACH
-  """
-  Redirects the user to appropriate site based on role
-
-  Returns:
-      Response: the redirect response
-  """
-  role = session.get("role")
-  
-  if role == "seeker":
-    return redirect(url_for("collective_overview"))
-  elif role == "provider":
-    return redirect(url_for("my_collectives"))
-  else:
-    return redirect(url_for("landing"))
-
 
 
 # AUTH ROUTES ------------------------------------------------------------------ 
@@ -288,18 +278,18 @@ def profile():
     profile = {} # TODO: Pre-populate data here if any? (default data)
   
   form = ProfileForm(data=profile)
-  return render_template("profiles/seeker.html", form=form)
+  return render_template("profiles/seeker.html", form=form, profile=profile)
   
   
 @app.route("/profile", methods=['POST'])
 @role_required("seeker")
-def create_or_update_profile(): #TODO: Cleanup return statements
+def create_or_update_profile():
   """
   Send a PUT request to profile microservice to replace
   profile info with the newly submitted information.
 
   Returns:
-      Response | str: The profile page #TODO: redirect er jo måske lidt ligegyldig?
+      Response | str: The profile page
   """
   user_id = session.get("user_id") # Safe because @role_required ensures user is authenticated
   form = ProfileForm(request.form)
@@ -366,9 +356,63 @@ def collectives_index():
 
   return render_template("collectives/index.html", collective_entries=data, form=filters)
     
-    
+  
+#TODO: Crasher når vi går til kollektiv der ikke eksisterer.
 @app.route("/collectives/<int:id>", methods=["GET"])
 def collectives_view(id):
-  pass
-  # entry = Collective.get_by_id(id)
-  # return render_template("collectives/view.html", entry=entry)
+  response = requests.get(f"{COLLECTIVES_API}/collectives/{id}")
+  if response.status_code == 200:
+    entry = response.json()
+    return render_template("collectives/view.html", entry=entry)
+  else:
+    flash("Couldn't get collective", "error")
+    redirect(url_for("collectives_index"))
+
+
+@app.route("/provider/collectives", methods=["GET", "POST"])
+@role_required("provider")
+def provider_collectives():
+  # Get the user's id.
+  user_id = session.get("user_id")
+  # Get all collectives the user has created
+  response = requests.get(f"{COLLECTIVES_API}/collectives", params={"submitter_id": user_id})
+  
+  if response.status_code == 200:
+    collective_entries = response.json()
+  else:
+    flash("Couldn't load your collectives", "error")
+    collective_entries = {}
+  
+  return render_template("profiles/provider.html", collective_entries=collective_entries)
+
+
+#TODO: Ikke testet pga. manglende image implementering
+@app.route("/collectives/create", methods=["GET", "POST"])
+@role_required("provider")
+def collectives_create():
+  form = CollectiveForm()
+  
+  if request.method == 'POST':
+    if form.validate():
+      # Setup form data in dictionary to be sent with request
+      collective_data = {
+        "city": form.city.data,
+        "street": form.street.data,
+        "roomsize": form.roomsize.data,
+        "price": form.price.data,
+        "description": form.description.data,
+        "image": form.image.data
+      }
+      
+      # POST /collectives: Try to create collective
+      response = requests.post(f"{COLLECTIVES_API}/collectives", json=collective_data)
+      
+      if response.ok:
+        flash("Collective created!", "success")
+        return redirect(url_for("provider_collectives"))
+      else:
+        flash("Error creating collective", "error")
+    else:
+      flash("Invalid input", "error")
+    
+  return render_template("collectives/create.html", form=form)

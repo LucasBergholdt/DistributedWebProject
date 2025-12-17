@@ -18,8 +18,41 @@ Our current implementation has a landing page, role-based authentication and acc
 Important functionality we are ready for, but have not implemented, is the ability of seekers to apply for a collective, and in extension, the ability for the seeker to see the collectives applied for, and therefore also for the providers to see and evaluate upon recieved applications. 
 The sending and reviewing of applications is an important part of our problem domain, as each collective traditionally has their own distinctive procedure for deciding upon new members. Each collective is free to decide on this procecure outside of our service, and the decision-making process has been made easier by the profile data and application from the seeker provided by our service. 
 
-
-
 \subsection{High-level overview}
+
+We have chosen the Bootstrap framework for the visual identity of the service. This is to provide quicker deployment because of the ease of styling via the inherent CSS. However, we have tried to keep mindful of good accessibility and semantics of the HTML. 
+
+\subsubsection{Landing page}
+
+Our landing page prominently features an introducing hero with a header and a seachbar, an appropriate large scale image, a view of a few selected collectives and a small introduction of our service. 
+
+We have tried to deliberately make our landing page visually pleasing and have it provide a nice user experience. 
+This is done by stating clearly in our header what the main goal of the service is within the opening hero. Within the first few seconds, the user can already try to explore the database by searching for a city of their liking. 
+The few selected collectives are featured immediately afterwards, and serve as an advertisement of certain collectives. Exactly which collectives chosen to display can in the future be implemented to vary based on the specific user or on the specific promotion of the collectives.
+Already registered users can still use the landing page, and it is permanently accessible via the top left corner of the navigation bar on all pages of the service.
+The landing page scales nicely with differently formatted viewports; e.g with mobile phones. 
+
+\subsubsection{Page navigation}
+
+The content of the navigation bar depends on the authentication of the current user. 
+The bar will automatically scale depending on the size of the viewport, and if narrow enough, transform to a "hamburger" style menu. 
+Importantly, the authenticative information is stored on the right in the form of options to log in and register, and, when logged in, the status as "Logged in" and the option to log out. 
+The left hand side features the actually functionality of the service, with the global access to the view of collectives, and the ability to update your profile as a seeker, and create a new collective as a provider. 
+
+\subsubsection{Overview of collectives}
+
+An important part of our service is the overview and explorative element of our database. This is implemented via an ... , that displays an image and information about the size in squaremeters, the monthly expenses, and the ability to apply straight away. 
+Each advertisement is also clickable, and will take you to a detailed page with more elaborative information. All users can also apply a filter on these three variables, and discover specific collectives within their preferences. 
+
+\subsubsection{Seeker specific functionality}
+
+\subsubsection{Provider specific functionality}
+
+\subsubsection{Authentication and session management}
+
+
+
+
+
 
 

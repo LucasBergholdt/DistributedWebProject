@@ -24,7 +24,7 @@ class Collective(db.Model):
     price = db.Column(db.Integer())
     
     description = db.Column(db.String(5000)) # todo: ændret til 5000, da debug strengen er for lang til 500. Hvorofr virker det så i monolith?
-    image = db.Column(db.String(5000))
+    image_name = db.Column(db.String(5000))
 
     # Overvej konsekvens af manglende "relationships?"
     # Mere kompleks?
@@ -72,7 +72,7 @@ class Collective(db.Model):
         return query.all()
 
     @classmethod
-    def create_collective(cls, submitter_id, city, street, roomsize, price, description, image):
+    def create_collective(cls, submitter_id, city, street, roomsize, price, description, image_name):
       """
       Create a new collective with the provided details.
 
@@ -90,7 +90,7 @@ class Collective(db.Model):
           roomsize = roomsize,
           price = price,
           description = description.strip(),
-          image = image.strip()
+          image_name = image_name.strip()
       )
 
       db.session.add(collective)
@@ -113,12 +113,8 @@ class Collective(db.Model):
             "roomsize": self.roomsize,
             "price": self.price,
             "description": self.description,
-            "image": self.image
+            "image_name": self.image_name
         }
-  
-  
-    
-
 
 # Debug Purposes ------------------
 descr = """
@@ -170,9 +166,9 @@ def post_collectives():
     price = data.get('price')
     description = data.get('description')
     roomsize = data.get('roomsize')
-    image = data.get('image')
+    image_name = data.get('image_name')
 
-    if not all([submitter_id, price, city, street, description, roomsize, image]): # works because None = False
+    if not all([submitter_id, price, city, street, description, roomsize, image_name]): # works because None = False
         return jsonify({"error": "Missing data"}), 400
 
     collective = Collective.create_collective(
@@ -182,10 +178,9 @@ def post_collectives():
         roomsize,
         price,
         description,
-        image
+        image_name
     )
     return jsonify(collective.to_dict()), 201
-
 
 @app.route("/collectives/<int:id>", methods=["GET"])
 def view_collective(id):
@@ -194,8 +189,19 @@ def view_collective(id):
         return jsonify(entry.to_dict()), 200
     else:
         return jsonify({"error": "Collective not found"}), 404
-    
 
+@app.route("/collectives/<int:id>", methods=["DELETE"])
+def collectives_delete(id):
+    """ 
+    Deletes a collective entry. 
+    """
+    entry = Collective.get_by_id(id)
+    if entry:
+        db.session.delete(entry)
+        db.session.commit()
+        return jsonify({"success": "Collective successfully deleted"}), 200
+    else:
+        return jsonify({"error": "Collective not found."}), 404
 
 
 

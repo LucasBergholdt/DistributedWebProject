@@ -144,7 +144,7 @@ def upload_image(file_storage):
         form_image: A werkzeug.datastructures.FileStorage object
 
     Returns:
-        str: The stored imagename
+        str: The stored filename
     """
 
     # define dictionary files, mapping a "file" to a 3-tuple.
@@ -162,7 +162,7 @@ def upload_image(file_storage):
     if response.status_code == 201:
       # return newly stored name
       data = response.json()
-      return data["image_name"]
+      return data["filename"]
 
 
 
@@ -379,7 +379,7 @@ def collectives_index():
     if response.ok:
       data = response.json()
       if params: 
-        flash(f"Filters: {filters.city.data}, {filters.price.data}, {filters.roomsize.data} applied", "success")
+        flash(f"Filters: {filters.city.data}, {filters.price.data}, {filters.roomsize.data} applied", "success")  
   
   # Or get all. 
   else: 
@@ -393,23 +393,14 @@ def collectives_index():
   response = requests.get(f"{PICTURES_API}/pictures", data=data)
 
   return render_template("collectives/index.html", collective_entries=data, form=filters)
-
+    
 #TODO: Crasher når vi går til kollektiv der ikke eksisterer.
 @app.route("/collectives/<int:id>", methods=["GET"])
 def collectives_view(id):
   response = requests.get(f"{COLLECTIVES_API}/collectives/{id}")
   if response.status_code == 200:
     entry = response.json()
-    picture_url = f"{PICTURES_API}/pictures/{entry['image_name']}"
-    # flash(f"The picture URL is {picture_url}")
-    #DEBUG
-    # response = requests.get(picture_url)
-    #if response.ok:
-    #  flash("DENNE EXECUTES.")
-    #else:
-    #  flash("Denne executes".)
-
-    return render_template("collectives/view.html", entry=entry, picture_url=picture_url)
+    return render_template("collectives/view.html", entry=entry)
   else:
     flash("Couldn't get collective", "error")
     return redirect(url_for("collectives_index"))
@@ -438,28 +429,32 @@ def provider_collectives():
 def collectives_create():
   form = CollectiveForm()
 
-  if form.validate_on_submit():
+  if request.method == 'POST':
+    if form.validate(): #TODO: Tror form.validate er nok alene.
+      
+      # ------------ Upload Image ---------------
+      file_storage = form.image.data
 
-    file_storage = form.image.data
+      # Setup form data in dictionary to be sent with request
+      files = {
+      # value can be fetched by request.files["file"].
+        "file": (
+          file_storage.filename,
+          file_storage.stream,  
+          file_storage.mimetype #TODO not used right now
+        )
+      }
 
-    # make dictionary object with "file" pointing to 3 values. can be fetched by request.files["file"].
-    files = {
-      "file": (
-        file_storage.filename,
-        file_storage.stream,  
-        file_storage.mimetype #TODO not used right now
-      )
-    }
+    # By sending data as "files", it is sent as a multipart/formdata API request.
+      response = requests.post(f"{PICTURES_API}/pictures", files = files)
+      if response.status_code == 201:
 
-    # create image. #TODO ERROR HER!
-    response = requests.post(f"{PICTURES_API}/pictures", files = files) # By sending data as "files", it is sent as a multipart/formdata API request.
-    flash(f"Response code after uploading picture: {response.status_code}") #TODO debug
-    if response.status_code == 201:
-      # if success, create collective
-      data = response.json()
-      image_name = data["image_name"]
-      flash("Image was uploaded! Name is" + image_name)
-
+        # return newly stored name
+        data = response.json()
+        new_filename = data["filename"]
+        flash("Image was uploaded! Name is" + new_filename)
+    
+      # TODO: Ikke lav collective hvis der går fejl i image.
       collective_data = {
         "submitter_id": session.get("user_id"), #TODO Lavet hurtigt af C-E, virker dette?
         "city": form.city.data,
@@ -467,32 +462,19 @@ def collectives_create():
         "roomsize": form.roomsize.data,
         "price": form.price.data,
         "description": form.description.data,
-        "image_name": image_name
+        "image": new_filename
       }
-    
+      
+      # POST /collectives: Try to create collective
+      # #TODO Hvis failure: slet image entry.
       response = requests.post(f"{COLLECTIVES_API}/collectives", json=collective_data)
-      flash(f"Response code after uploading collective: {response.status_code}")  #TODO debug
-      if response.ok:
+      flash("Response code:" + str(response.status_code))
+      if response.ok: # TODO: Status code er 500 lige nu?
         flash("Collective created!", "success")
         return redirect(url_for("provider_collectives"))
       else:
-        flash("Error creating collective. Removing previously uploaded image...", "error")  #TODO remove image
+        flash("Error creating collective", "error")
     else:
-      flash("Image could not be uploaded.")
-  else:
-    flash("Invalid input", "error")
+      flash("Invalid input", "error")
     
   return render_template("collectives/create.html", form=form)
-
-@app.route("/collectives/delete/<int:id>", methods=["POST"])
-def collectives_delete(id):
-    """ 
-    Deletes a collective entry. Method is POST because HTML cannot send DELETE requests. 
-    """
-    response = requests.delete(f"{COLLECTIVES_API}/collectives/{id}")
-    if response.ok:
-      #TODO: Remove image too.
-      flash(flash("Collective deleted.","success"))
-    else:
-      flash("Sorry, we couldn't find the collective that you wanted to delete.", 'warning')
-    return redirect(url_for('provider_collectives'))

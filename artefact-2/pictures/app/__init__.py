@@ -4,8 +4,6 @@ from flask import Flask, jsonify, request
 from flask_sqlalchemy import SQLAlchemy
 from flask_bcrypt import Bcrypt
 
-from flask import Response #TODO
-
 import uuid
 from flask_wtf import FlaskForm
 from flask_wtf.file import FileField, FileRequired
@@ -30,7 +28,7 @@ ALLOWED_EXTENSIONS = {'png', 'jpg', 'jpeg', 'gif'}
 db = SQLAlchemy(app)
 bcrypt = Bcrypt(app)
 
-class Pictures(db.Model):
+class Picture(db.Model):
   """
   User model representing a user in the application.
   Inherits from db.Model to integrate SQLAlchemy.
@@ -38,33 +36,19 @@ class Pictures(db.Model):
   __tablename__ = 'pictures'
 
   id = db.Column(db.Integer, primary_key=True)
-
-  image_name = db.Column(db.String(500))
-
-  image_data = db.Column(db.LargeBinary, nullable=False)  # blob data
+  name = db.Column(db.String(300))
+  data = db.Column(db.LargeBinary, nullable=False)
 
 
   @classmethod
-  def create_picture(cls, image_name, image_data):
-    """
-    Creates a picture
-    
-    :param cls: Description
-    :param image_name: name: image name with random string.
-    :param image_data: blob data. file_storage.read()
-    """
-
-
-
-
+  def create_picture(cls, name, data):
     picture = cls(
-        image_name = image_name,
-        image_data = image_data 
+      name = name,
+      data = data
     )
 
     db.session.add(picture)
     db.session.commit()
-    return picture
 
   @staticmethod
   def get_by_id(id):
@@ -77,10 +61,10 @@ class Pictures(db.Model):
     Returns:
         Picture: The Picture object if found, otherwise None.
     """
-    return Pictures.query.filter_by(id=id).first()
+    return Picture.query.filter_by(id=id).first()
   
   @staticmethod
-  def get_by_name(image_name):
+  def get_by_name(name):
     """
     Retrieve a Picture by their name.
 
@@ -90,11 +74,11 @@ class Pictures(db.Model):
     Returns:
         Picture: The Picture object if found, otherwise None.
     """
-    return Pictures.query.filter_by(image_name=image_name).first()
+    return Picture.query.filter_by(name=name.strip()).first()
 
 # Clears the database and create tables within the application context
 with app.app_context():
-  db.drop_all() #TODO
+  # db.drop_all() #TODO
   db.create_all()
 
 
@@ -104,72 +88,44 @@ with app.app_context():
 def upload():
   """
   Uploads a new picture.
-  Expects payload with blob data and filename.
-  Makes a new filename and stores the blobdata with this filename.
+  Expects a payload with BLOB data.
+  - If success, ...
+  - ...
+
+  Args:
+    - A "file" sent by multipart/form data (by specifying "files" in requests.post)
 
   Returns:
-    str: New filename.
-
+    str: Stored filename
   """
 
   if "file" not in request.files:
     return jsonify({"error": "Missing file"}), 400
   file_storage = request.files["file"]
 
-  image_name = file_storage.filename
+  name = file_storage.filename
   blobdata = file_storage.read()  #TODO: Måske read selve file_Storage.stream? Eller ved Python godt dette?
 
-  if not all([image_name, blobdata]):
+  if not all([name, blobdata]):
       return jsonify({"error": "Missing data"}), 400
 
   # Get secure version of provided filename
-  filename = secure_filename(image_name)
+  filename = secure_filename(name)
   
   # Check that file has an allowed extension
   if not is_allowed_file_extension(filename):
       return jsonify({"error": "File extension not allowed"}), 405
 
   random_str = uuid.uuid4().hex
-  image_name = random_str + filename
-
-  # return jsonify({"debug": "I got so far!"}), 499 #DEBUG
+  stored_name = random_str + filename
 
   # store the picture
-  Pictures.create_picture(image_name, blobdata) # FAILER HER!
-  # return jsonify({"debug": "I got so far!"}), 498 #DEBUG
-  return jsonify({"image_name": image_name}), 201
+  Picture.create_picture(stored_name, blobdata)
+  return jsonify({"filename": stored_name}), 201
 
-
-@app.route("/pictures/<string:image_name>", methods=['GET'])
-def download(image_name):
-    """
-      Downloads a picture
-      Expects a name
-      - If success, ...
-      - ...
-
-      Args:
-        - The name of the image
-
-      Returns:
-          Response: BLOB object
-    """
-    entry = Pictures.get_by_name(image_name)
-    if entry:
-        return Response(
-          entry.image_data,
-          mimetype="image/jpeg",  # or entry.content_type if you store it
-          headers={
-              "Content-Disposition": f'inline; filename="{entry.image_name}"'
-        })
-    #BLOB, 200  #TODO
-    else:
-        return jsonify({"error": "Picture not found"}), 404
-
-
-# TODO
+  
 @app.route("/pictures", methods=['GET'])
-def download_multiple():
+def download():
    """
   Downloads a picture
   Expects a name

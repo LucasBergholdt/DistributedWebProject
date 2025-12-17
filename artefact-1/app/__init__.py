@@ -737,7 +737,7 @@ def put_profile():
         filename = None
         if form.image.data:
             filename = save_image(form.image.data)
-        
+
         if profile:
             # Replace current profile with provided information
             profile.replace_all_fields(name, description, birthdate, gender, occupation, filename)

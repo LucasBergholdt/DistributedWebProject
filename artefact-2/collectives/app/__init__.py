@@ -24,7 +24,7 @@ class Collective(db.Model):
     price = db.Column(db.Integer())
     
     description = db.Column(db.String(5000)) # todo: ændret til 5000, da debug strengen er for lang til 500. Hvorofr virker det så i monolith?
-    image = db.Column(db.String(500))
+    image = db.Column(db.String(5000))
 
     # Overvej konsekvens af manglende "relationships?"
     # Mere kompleks?
@@ -142,8 +142,6 @@ with app.app_context():
 #   seed_if_empty()
   create_default_collectives()
 
-  
-
 
 # ------------------------------------------ ROUTES ----------------------------------------------------------------------
 # Fetches all collectives. TODO: Support a parameter to fetch only list of collectives.
@@ -181,12 +179,12 @@ def post_collectives():
         submitter_id,
         city,
         street,
+        roomsize,
         price,
         description,
-        roomsize,
         image
     )
-    return jsonify({collective.to_dict()}), 201
+    return jsonify(collective.to_dict()), 201
 
 
 @app.route("/collectives/<int:id>", methods=["GET"])

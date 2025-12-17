@@ -19,6 +19,7 @@ app.config['SECRET_KEY'] = "change-me" #TODO Få denne fra environment?
 AUTH_API = os.getenv('AUTH_API_URL')
 COLLECTIVES_API = os.getenv('COLLECTIVES_API_URL')
 PROFILE_API = os.getenv('PROFILE_API_URL')
+PICTURES_API = os.getenv('PICTURES_API_URL')
 
 # Forms -----------------------------------------------------------------------
 #TODO: Smid over i anden fil og import?
@@ -129,6 +130,40 @@ def role_required(role_name):
       return f(*args, **kwargs)
     return decorated_function
   return decorator
+
+
+
+
+
+# HELPER FUNCTION ------------------------------------------------------------
+def upload_image(file_storage):
+    """
+    Saves the uploaded image with a unique name in the upload folder.
+
+    Args:
+        form_image: A werkzeug.datastructures.FileStorage object
+
+    Returns:
+        str: The stored filename
+    """
+
+    # define dictionary files, mapping a "file" to a 3-tuple.
+    files = {
+      # value can be fetched by request.files["file"].
+      "file": (
+          file_storage.filename,
+          file_storage.stream,  
+          file_storage.mimetype #TODO not used right now
+      )
+    }
+
+    # By sending data as "files", it is sent as a multipart/formdata API request.
+    response = requests.post(f"{PICTURES_API}/pictures", files = files)
+    if response.status_code == 201:
+      # return newly stored name
+      data = response.json()
+      return data["filename"]
+
 
 
 # ROUTES ----------------------------------------------------------------------
@@ -354,9 +389,11 @@ def collectives_index():
     else:
       data={}
 
+  # Fetch images from Pictures microservice. Send list of JSON objects to collectives, or just send list of picture names.
+  response = requests.get(f"{PICTURES_API}/pictures", data=data)
+
   return render_template("collectives/index.html", collective_entries=data, form=filters)
     
-  
 #TODO: Crasher når vi går til kollektiv der ikke eksisterer.
 @app.route("/collectives/<int:id>", methods=["GET"])
 def collectives_view(id):
@@ -391,23 +428,48 @@ def provider_collectives():
 @role_required("provider")
 def collectives_create():
   form = CollectiveForm()
-  
+
   if request.method == 'POST':
-    if form.validate():
+    if form.validate(): #TODO: Tror form.validate er nok alene.
+      
+      # ------------ Upload Image ---------------
+      file_storage = form.image.data
+
       # Setup form data in dictionary to be sent with request
+      files = {
+      # value can be fetched by request.files["file"].
+        "file": (
+          file_storage.filename,
+          file_storage.stream,  
+          file_storage.mimetype #TODO not used right now
+        )
+      }
+
+    # By sending data as "files", it is sent as a multipart/formdata API request.
+      response = requests.post(f"{PICTURES_API}/pictures", files = files)
+      if response.status_code == 201:
+
+        # return newly stored name
+        data = response.json()
+        new_filename = data["filename"]
+        flash("Image was uploaded! Name is" + new_filename)
+    
+      # TODO: Ikke lav collective hvis der går fejl i image.
       collective_data = {
+        "submitter_id": session.get("user_id"), #TODO Lavet hurtigt af C-E, virker dette?
         "city": form.city.data,
         "street": form.street.data,
         "roomsize": form.roomsize.data,
         "price": form.price.data,
         "description": form.description.data,
-        "image": form.image.data
+        "image": new_filename
       }
       
       # POST /collectives: Try to create collective
+      # #TODO Hvis failure: slet image entry.
       response = requests.post(f"{COLLECTIVES_API}/collectives", json=collective_data)
-      
-      if response.ok:
+      flash("Response code:" + str(response.status_code))
+      if response.ok: # TODO: Status code er 500 lige nu?
         flash("Collective created!", "success")
         return redirect(url_for("provider_collectives"))
       else:

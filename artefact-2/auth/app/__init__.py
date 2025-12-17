@@ -172,7 +172,6 @@ class Session(db.Model):
     """
     return Session.query.filter_by(token=token).first()
 
-
 # Clears the database and create tables within the application context
 with app.app_context():
   # db.drop_all() #TODO

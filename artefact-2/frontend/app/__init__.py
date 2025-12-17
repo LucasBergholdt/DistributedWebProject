@@ -366,7 +366,7 @@ def collectives_view(id):
     return render_template("collectives/view.html", entry=entry)
   else:
     flash("Couldn't get collective", "error")
-    redirect(url_for("collectives_index"))
+    return redirect(url_for("collectives_index"))
 
 
 @app.route("/provider/collectives", methods=["GET", "POST"])

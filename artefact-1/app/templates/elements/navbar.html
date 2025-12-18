@@ -18,16 +18,16 @@
 
             <ul class="navbar-nav"> <!-- Left is default -->
                 <li class="nav-item">
-                    <a class="nav-link" href="{{ url_for('collectives_index') }}">Overview of all collectives</a>
+                    <a class="nav-link" href="{{ url_for('logic.collectives_index') }}">Overview of all collectives</a>
                 </li>
                 {% if current_user.role == "seeker" %}
                 <li class="nav-item">
-                    <a class="nav-link link-light" href="{{ url_for('profile')}}">Your Profile</a>
+                    <a class="nav-link link-light" href="{{ url_for('logic.profile')}}">Your Profile</a>
                 </li>
                 {% endif %}
                 {% if current_user.role == "provider" %}
                 <li class="nav-item">
-                    <a class="nav-link link-light" href="{{ url_for('provider_collectives') }}">Your Collectives </a>
+                    <a class="nav-link link-light" href="{{ url_for('logic.provider_collectives') }}">Your Collectives </a>
                 </li>
                 {% endif %}
             </ul>
@@ -43,14 +43,14 @@
                     <!-- {{current_user.name}}, {{current_user.role}} -->
                 </li>
                 <li class="nav-item">
-                    <a class="nav-link link-light" href="{{ url_for('logout')}}">Log out</a>
+                    <a class="nav-link link-light" href="{{ url_for('auth.logout')}}">Log out</a>
                 </li>
                 {% else %}
                 <li class="nav-item">
-                    <a class="nav-link link-light" href="{{ url_for('login') }}">Login</a>
+                    <a class="nav-link link-light" href="{{ url_for('auth.login') }}">Login</a>
                 </li>
                 <li class="nav-item">
-                    <a class="nav-link link-light" href="{{ url_for('register') }}">Register</a>
+                    <a class="nav-link link-light" href="{{ url_for('auth.register') }}">Register</a>
                 </li>
             </ul>
             {% endif %}

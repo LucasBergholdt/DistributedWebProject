@@ -15,7 +15,7 @@
 <div class="container row">
   <div class="container col-1"></div>
   <div class="container col-2 ">
-  <form method="get" action="{{ url_for('collectives_index') }}">
+  <form method="get" action="{{ url_for('logic.collectives_index') }}">
       {{ form.hidden_tag()}}  <!-- Flask WT-Forms security feature -->
       <div class="form-group mb-3">
         {{ form.city.label(for="city") }}        
@@ -52,7 +52,7 @@
     <div class="d-flex align-items-start flex-wrap p-3 bg-light container col-9">
       {% for entry in collective_entries %}
       <div class="card mx-2 my-2" style="width: 18rem;">
-        <a href="{{ url_for('collectives_view', id=entry.id)}}"><img class="card-img-top collectiveimage" src="{{ url_for('static', filename='images/' ~ entry.image) }}" alt="Image of a collective"></a>
+        <a href="{{ url_for('logic.collectives_view', id=entry.id)}}"><img class="card-img-top collectiveimage" src="{{ url_for('static', filename='images/' ~ entry.image) }}" alt="Image of a collective"></a>
         <div class="card-body">
           <h5 class="card-title">{{ entry.street }}</h5>
           <h6 class="card-subtitle mb-2 text-muted">{{ entry.city }}</h6>

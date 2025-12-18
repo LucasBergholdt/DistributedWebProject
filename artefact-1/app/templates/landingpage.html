@@ -17,7 +17,7 @@
                 <!-- Search -->
                 <div class="form-container mt-4">
                     <span class="form-badge bg-primary bg-opacity-10 text-primary"></span>
-                    <form method="get" action="{{ url_for('collectives_index') }}">
+                    <form method="get" action="{{ url_for('logic.collectives_index') }}">
                         <div class="input-group mb-3 shadow-sm rounded-pill overflow-hidden">
                             <!-- ARIA: accessibility of search bar.-->
                             <input type="text" name="city" class="form-control border-0 py-3 px-4"
@@ -42,7 +42,7 @@
             <!-- Never wrap to next row -->
             {% for entry in selected_entries %}
             <div class="card my-2" style="width: 18rem;">
-                <a href="{{ url_for('collectives_view', id=entry.id)}}"><img class="card-img-top collectiveimage"
+                <a href="{{ url_for('logic.collectives_view', id=entry.id)}}"><img class="card-img-top collectiveimage"
                         src="{{ url_for('static', filename='images/' ~ entry.image) }}" alt="Image of a collective"></a>
                 <div class="card-body">
                     <h5 class="card-title">{{ entry.street }}</h5>

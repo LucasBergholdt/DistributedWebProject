@@ -46,10 +46,27 @@ Each advertisement is also clickable, and will take you to a detailed page with 
 
 \subsubsection{Seeker specific functionality}
 
+Seekers are meant to use the service in order to find collectives of interest, or to explore collectives in general. 
+Seeker specific functionality encompass the ability to update you profile with important information via a form. 
+This includes the ability to and persistent storage of a profile picture, name, birthdate, gender, occupation and a short biography. The key is, that is information is visible for the providers of collectives, when they look into your application, and they can use this to decide whether or not the seeker is a good fit for their collective. 
+Furthermore, we have implemented the skeleton of the ability to actually apply for collectives; this encompass the "Apply" button on each collective in the overview and in the detailed page of a collective.
+Ideally, we want to make this invisible for all other roles (anonymous, provider) than the seeker \textbf{så vidt jeg husker?}. Future functionality would also make the current progress of the application(s) visible, preferably accesible via the navigation bar stored on the left hand side. 
+This could have the relevant data, such as where and when the application is for, and whether it has been accepted or rejected. 
+
 \subsubsection{Provider specific functionality}
+
+Providers are meant to use the service in order to attract potential new members of the collective, and to gain inspiration for their own collective by looking at other collectives. 
+Provider specific functionality currently encompass the ability to submit and persistent storage of a new collective. This consists of a form that needs data on city, streetname, monthly expenses, square meters, a longer description and a picture.
+When the collective has been submitted, it becomes part of the global overview of all collectives, and can instantly be seen by potential seekers. 
+It is also visible on the provider-specific page "Your Collectives", where the provider can edit or delete their submission(s). 
+Ideally, we want to create an intuitive overview of applicants for their collectives; where they can access the application, but also clearly see the profile data of the seeker. 
+One could also consider the possibility to mark your collective as "idle", if it is currently not seeking new members, but still want to exist in our database. This information should be clearly visible to the seeker. 
+\textbf{overvej om forrige sætning skal med.}
 
 \subsubsection{Authentication and session management}
 
+An important part of our application is the ability to register as a specific user, and the session managment when logged in across time periods. 
+This controls the access to the above mentioned functionality via authentication, while also improving the user experience. 
 
 
 

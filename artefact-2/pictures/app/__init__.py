@@ -32,7 +32,7 @@ bcrypt = Bcrypt(app)
 
 class Pictures(db.Model):
   """
-  User model representing a user in the application.
+  Picture model representing an image.
   Inherits from db.Model to integrate SQLAlchemy.
   """
   __tablename__ = 'pictures'
@@ -47,14 +47,11 @@ class Pictures(db.Model):
   @classmethod
   def create_picture(cls, image_name, image_data):
     """
-    Creates a picture
+    Creates a picture in the database
     
-    :param cls: Description
-    :param image_name: name: image name with random string.
-    :param image_data: blob data. file_storage.read()
+    :param image_name: image name with random string.
+    :param image_data: blob data fetched by file_storage.read()
     """
-
-
 
 
     picture = cls(
@@ -98,11 +95,8 @@ with app.app_context():
   db.create_all()
 
 
-
-
-
 # ROUTES ----------------------------------------------------------------------
-# TODO: Done.
+
 @app.route("/pictures", methods=['POST'])
 def upload():
   """
@@ -120,7 +114,7 @@ def upload():
   file_storage = request.files["file"]
 
   image_name = file_storage.filename
-  blobdata = file_storage.read()  #TODO: Måske read selve file_Storage.stream? Eller ved Python godt dette?
+  blobdata = file_storage.read()
 
   if not all([image_name, blobdata]):
       return jsonify({"error": "Missing data"}), 400
@@ -135,11 +129,7 @@ def upload():
   random_str = uuid.uuid4().hex
   image_name = random_str + filename
 
-  # return jsonify({"debug": "I got so far!"}), 499 #DEBUG
-
-  # store the picture
-  Pictures.create_picture(image_name, blobdata) # FAILER HER!
-  # return jsonify({"debug": "I got so far!"}), 498 #DEBUG
+  Pictures.create_picture(image_name, blobdata)
   return jsonify({"image_name": image_name}), 201
 
 
@@ -147,41 +137,34 @@ def upload():
 def download(image_name):
     """
       Downloads a picture
-      Expects a name
-      - If success, ...
-      - ...
 
       Args:
         - The name of the image
 
       Returns:
-          Response: BLOB object
+          Response with mimetype image/jpeg.
     """
     entry = Pictures.get_by_name(image_name)
     if entry:
         return Response(
           entry.image_data,
-          mimetype="image/jpeg",  # or entry.content_type if you store it
+          mimetype="image/jpeg",
           headers={
               "Content-Disposition": f'inline; filename="{entry.image_name}"'
         })
-    #BLOB, 200  #TODO
     else:
         return jsonify({"error": "Picture not found"}), 404
+    
+@app.route("/pictures/<string:image_name>", methods=["DELETE"])
+def delete(image_name):
+    """ 
+    Deletes a picture entry. 
+    """
+    entry = Pictures.get_by_name(image_name)
+    if entry:
+        db.session.delete(entry)
+        db.session.commit()
+        return jsonify({"success": "Picture successfully deleted"}), 200
+    else:
+        return jsonify({"error": "Picture not found."}), 404
 
-
-# TODO
-@app.route("/pictures", methods=['GET'])
-def download_multiple():
-   """
-  Downloads a picture
-  Expects a name
-  - If success, ...
-  - ...
-
-  Args:
-    - The name of the image
-
-  Returns:
-      Response: BLOB object
-  """

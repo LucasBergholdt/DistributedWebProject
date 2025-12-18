@@ -132,40 +132,6 @@ def role_required(role_name):
     return decorated_function
   return decorator
 
-
-
-
-
-# HELPER FUNCTION ------------------------------------------------------------
-def upload_image(file_storage):
-    """
-    Saves the uploaded image with a unique name in the upload folder.
-
-    Args:
-        form_image: A werkzeug.datastructures.FileStorage object
-
-    Returns:
-        str: The stored imagename
-    """
-
-    # define dictionary files, mapping a "file" to a 3-tuple.
-    files = {
-      # value can be fetched by request.files["file"].
-      "file": (
-          file_storage.filename,
-          file_storage.stream,  
-          file_storage.mimetype #TODO not used right now
-      )
-    }
-
-    # By sending data as "files", it is sent as a multipart/formdata API request.
-    response = requests.post(f"{PICTURES_API}/pictures", files = files)
-    if response.status_code == 201:
-      # return newly stored name
-      data = response.json()
-      return data["image_name"]
-
-
 # ROUTES ----------------------------------------------------------------------
 
 @app.route("/", methods=('GET','POST'))
@@ -228,7 +194,6 @@ def login():
   
   # Render login site
   return render_template('auth/login.html', form=form)
-  
 
 
 @app.route("/register", methods=['POST', 'GET'])
@@ -344,12 +309,13 @@ def create_or_update_profile():
       files = {
         "file": (
           file_storage.filename,
-          file_storage.stream,  
-          file_storage.mimetype #TODO not used right now
+          file_storage.stream
         )
       }
-      picture_response = requests.post(f"{PICTURES_API}/pictures", files=files) # By sending data as "files", it is sent as a multipart/formdata API request.
-      flash(f"Response code after uploading picture: {picture_response.status_code}") #TODO debug
+      
+      # send data as multipart/formdata request to API
+      picture_response = requests.post(f"{PICTURES_API}/pictures", files=files)
+      # flash(f"Response code after uploading picture: {picture_response.status_code}") #TODO debug msg
       if picture_response.status_code == 201:
         # if success, update image_name
         data = picture_response.json()
@@ -420,9 +386,6 @@ def collectives_index():
     else:
       data={}
 
-  # Fetch images from Pictures microservice. Send list of JSON objects to collectives, or just send list of picture names.
-  #response = requests.get(f"{PICTURES_API}/pictures", data=data)
-
   return render_template("collectives/index.html", collective_entries=data, form=filters, pictures_url=PICTURES_URL_FROM_HOST)
 
 #TODO: Crasher når vi går til kollektiv der ikke eksisterer.
@@ -431,15 +394,6 @@ def collectives_view(id):
   response = requests.get(f"{COLLECTIVES_API}/collectives/{id}")
   if response.status_code == 200:
     entry = response.json()
-    
-    # DEBUG. Fjernes når vi er sikre på at det virker.
-          # flash(f"The picture URL is {pictures_url}")
-          #DEBUG
-          # response = requests.get(pictures_url)
-          #if response.ok:
-          #  flash("DENNE EXECUTES.")
-          #else:
-          #  flash("Denne executes".)
 
     return render_template("collectives/view.html", entry=entry, pictures_url=PICTURES_URL_FROM_HOST)
   else:
@@ -471,25 +425,21 @@ def collectives_create():
 
     file_storage = form.image.data
 
-    # make dictionary object with "file" pointing to 3 values. can be fetched by request.files["file"].
     files = {
       "file": (
         file_storage.filename,
-        file_storage.stream,  
-        file_storage.mimetype #TODO not used right now
+        file_storage.stream
       )
     }
 
-    response = requests.post(f"{PICTURES_API}/pictures", files = files) # By sending data as "files", it is sent as a multipart/formdata API request.
-    flash(f"Response code after uploading picture: {response.status_code}") #TODO debug
+    # send data as multipart/formdata request to API
+    response = requests.post(f"{PICTURES_API}/pictures", files = files)
     if response.status_code == 201:
-      # if success, create collective
       data = response.json()
       image_name = data["image_name"]
-      flash("Image was uploaded! Name is" + image_name)
 
       collective_data = {
-        "submitter_id": session.get("user_id"), #TODO Lavet hurtigt af C-E, virker dette?
+        "submitter_id": session.get("user_id"), #TODO Lavet hurtigt af C-E, er det good to go?
         "city": form.city.data,
         "street": form.street.data,
         "roomsize": form.roomsize.data,
@@ -497,18 +447,17 @@ def collectives_create():
         "description": form.description.data,
         "image_name": image_name
       }
-    
       response = requests.post(f"{COLLECTIVES_API}/collectives", json=collective_data)
-      flash(f"Response code after uploading collective: {response.status_code}")  #TODO debug
       if response.ok:
         flash("Collective created!", "success")
         return redirect(url_for("provider_collectives"))
       else:
         flash("Error creating collective. Removing previously uploaded image...", "error")  #TODO remove image
+        response = requests.delete(f"{PICTURES_API}/pictures/{image_name}")
+        if not response.ok:
+          flash("The previously uploaded image could not be deleted.")  #TODO C-E måske bare fjern denne besked til useren? 
     else:
       flash("Image could not be uploaded.")
-  else:
-    flash("Invalid input", "error")
     
   return render_template("collectives/create.html", form=form)
 
@@ -517,10 +466,23 @@ def collectives_delete(id):
     """ 
     Deletes a collective entry. Method is POST because HTML cannot send DELETE requests. 
     """
+
+    # fetch image name before deletion
+    image_name = None
+
+    response = requests.get(f"{COLLECTIVES_API}/collectives/{id}")
+    if response.ok:
+      data = response.json()
+      image_name = data["image_name"]
+      
+    # delete collective and image
     response = requests.delete(f"{COLLECTIVES_API}/collectives/{id}")
     if response.ok:
-      #TODO: Remove image too.
-      flash(flash("Collective deleted.","success"))
+      response = requests.delete(f"{PICTURES_API}/pictures/{image_name}")
+      if response.ok:
+        flash("Collective deleted.","success")
+      else:
+        flash("Collective was successfully deleted, but not the image.")
     else:
       flash("Sorry, we couldn't find the collective that you wanted to delete.", 'warning')
     return redirect(url_for('provider_collectives'))

@@ -20,8 +20,8 @@ services:
       - profile
   auth:
     build: ./auth
-    ports:
-      - "5001:5000" # tilgå logic på 5001 porten
+    expose:
+      - "5000" # tilgå logic på 5001 porten
     environment:
       - DATABASE_URL=postgresql://postgres:postgres@db:5432/postgres
     #TODO: FOR DEBUGGING
@@ -33,8 +33,8 @@ services:
   
   collectives:
     build: ./collectives
-    ports:
-      - "5002:5000"  # Expose collectives service
+    expose:
+      - "5000"  # Expose collectives service
     environment:
       - DATABASE_URL=postgresql://postgres:postgres@db:5432/postgres
     #TODO: FOR DEBUGGING
@@ -47,8 +47,8 @@ services:
 
   profile:
     build: ./profile
-    ports:
-      - "5003:5000"  # Expose profile service
+    expose:
+      - "5000"  # Expose profile service
     environment:
       - DATABASE_URL=postgresql://postgres:postgres@db:5432/postgres
     #TODO: FOR DEBUGGING

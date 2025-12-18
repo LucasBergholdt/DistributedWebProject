@@ -20,6 +20,7 @@ AUTH_API = os.getenv('AUTH_API_URL')
 COLLECTIVES_API = os.getenv('COLLECTIVES_API_URL')
 PROFILE_API = os.getenv('PROFILE_API_URL')
 PICTURES_API = os.getenv('PICTURES_API_URL')
+PICTURES_URL_FROM_HOST = "http://localhost:5004/"
 
 # Forms -----------------------------------------------------------------------
 #TODO: Smid over i anden fil og import?
@@ -400,7 +401,7 @@ def collectives_view(id):
   response = requests.get(f"{COLLECTIVES_API}/collectives/{id}")
   if response.status_code == 200:
     entry = response.json()
-    picture_url = f"{PICTURES_API}/pictures/{entry['image_name']}"
+    picture_url = f"{PICTURES_URL_FROM_HOST}/pictures/"
     # flash(f"The picture URL is {picture_url}")
     #DEBUG
     # response = requests.get(picture_url)

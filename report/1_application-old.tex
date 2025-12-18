@@ -1,0 +1,75 @@
+\section{Application: Kollektivportalen.dk}
+
+\subsection{Introduction to the service and problem domain}
+Our web service, "Kollektivportalen.dk", provides a portal for matching seekers of collectives with providers of collectives. 
+Collective housing, in danish known as "Kollektiv", is a variant of co-living, where individuals share the same living space, such as an apartment or a house. 
+Not only the space is shared, but also other fixed monthly expenses such as electricity and heat.
+Our idea originally came from the fact that no web service in Denmark currently solves this problem. The problem domain of finding or distributing a collective in Denmark is un-organized and characterized by the lack of one single source of data. Usually one would advertise in designated social media groups for a specific city, or on general housing services. 
+Importantly, our implementation has been done in the spirit of considering how we realistically would solve such a problem and acts as a prototype for our Innovation Project.
+
+Technically speaking our problem domain is therefore a CRUD-application in the context of role-based management of user capabilities.
+Our general design revolves around two distinct user groups, the seeker of a collective and the provider of a collective. The goal of our service is to provide an intuitive interface for both parties, that allows the seekers to easily find collectives of their preference, or, of same importance, to discover new previously unknown collectives, and to allow providers to easily advertise their collective, gain applications and also be inspired by other collectives.
+
+An important functionality in regards to the business aspect is the ability for all users, even anonymous ones, to browse potential collectives. 
+We want to make potential users able to quickly gain an overview of possible collectives, to motivate seekers to create an account and motivate potential providers to offer their own living solution by being inspired of what is currently available. 
+This is what justifies design decisions throughout our implementation, such as the searchbar on the landing page, and the ability to apply a filter when searching for collectives.
+
+Our current implementation has a landing page, role-based authentication and access, a profile page, the ability to update personal information, an overview of all collectives via a persistent database, the ability to filter data in the overview and the ability to create new entries in the database as a provider. 
+Important functionality we are ready for, but have not implemented, is the ability of seekers to apply for a collective, and in extension, the ability for the seeker to see the collectives applied for, and therefore also for the providers to see and evaluate upon recieved applications. 
+The sending and reviewing of applications is an important part of our problem domain, as each collective traditionally has their own distinctive procedure for deciding upon new members. Each collective is free to decide on this procecure outside of our service, and the decision-making process has been made easier by the profile data and application from the seeker provided by our service. 
+
+\subsection{High-level overview}
+
+We have chosen the Bootstrap framework for the visual identity of the service. This is to provide quicker deployment because of the ease of styling via the inherent CSS. However, we have tried to keep mindful of good accessibility and semantics of the HTML. 
+
+\subsubsection{Landing page}
+
+Our landing page prominently features an introducing hero with a header and a seachbar, an appropriate large scale image, a view of a few selected collectives and a small introduction of our service. 
+
+We have tried to deliberately make our landing page visually pleasing and have it provide a nice user experience. 
+This is done by stating clearly in our header what the main goal of the service is within the opening hero. Within the first few seconds, the user can already try to explore the database by searching for a city of their liking. 
+The few selected collectives are featured immediately afterwards, and serve as an advertisement of certain collectives. Exactly which collectives chosen to display can in the future be implemented to vary based on the specific user or on the specific promotion of the collectives.
+Already registered users can still use the landing page, and it is permanently accessible via the top left corner of the navigation bar on all pages of the service.
+The landing page scales nicely with differently formatted viewports; e.g with mobile phones. 
+
+\subsubsection{Page navigation}
+
+The content of the navigation bar depends on the authentication of the current user. 
+The bar will automatically scale depending on the size of the viewport, and if narrow enough, transform to a "hamburger" style menu. 
+Importantly, the authenticative information is stored on the right in the form of options to log in and register, and, when logged in, the status as "Logged in" and the option to log out. 
+The left hand side features the actually functionality of the service, with the global access to the view of collectives, and the ability to update your profile as a seeker, and create a new collective as a provider. 
+
+\subsubsection{Overview of collectives}
+
+An important part of our service is the overview and explorative element of our database. This is implemented via an ... , that displays an image and information about the size in squaremeters, the monthly expenses, and the ability to apply straight away. 
+Each advertisement is also clickable, and will take you to a detailed page with more elaborative information. All users can also apply a filter on these three variables, and discover specific collectives within their preferences. 
+
+\subsubsection{Seeker specific functionality}
+
+Seekers are meant to use the service in order to find collectives of interest, or to explore collectives in general. 
+Seeker specific functionality encompass the ability to update you profile with important information via a form. 
+This includes the ability to and persistent storage of a profile picture, name, birthdate, gender, occupation and a short biography. The key is, that is information is visible for the providers of collectives, when they look into your application, and they can use this to decide whether or not the seeker is a good fit for their collective. 
+Furthermore, we have implemented the skeleton of the ability to actually apply for collectives; this encompass the "Apply" button on each collective in the overview and in the detailed page of a collective.
+Ideally, we want to make this invisible for all other roles (anonymous, provider) than the seeker \textbf{så vidt jeg husker?}. Future functionality would also make the current progress of the application(s) visible, preferably accesible via the navigation bar stored on the left hand side. 
+This could have the relevant data, such as where and when the application is for, and whether it has been accepted or rejected. 
+
+\subsubsection{Provider specific functionality}
+
+Providers are meant to use the service in order to attract potential new members of the collective, and to gain inspiration for their own collective by looking at other collectives. 
+Provider specific functionality currently encompass the ability to submit and persistent storage of a new collective. This consists of a form that needs data on city, streetname, monthly expenses, square meters, a longer description and a picture.
+When the collective has been submitted, it becomes part of the global overview of all collectives, and can instantly be seen by potential seekers. 
+It is also visible on the provider-specific page "Your Collectives", where the provider can edit or delete their submission(s). 
+Ideally, we want to create an intuitive overview of applicants for their collectives; where they can access the application, but also clearly see the profile data of the seeker. 
+One could also consider the possibility to mark your collective as "idle", if it is currently not seeking new members, but still want to exist in our database. This information should be clearly visible to the seeker. 
+\textbf{overvej om forrige sætning skal med.}
+
+\subsubsection{Authentication and session management}
+
+An important part of our application is the ability to register as a specific user, and the session managment when logged in across time periods. 
+This controls the access to the above mentioned functionality via authentication, while also improving the user experience. 
+
+
+
+
+
+

@@ -11,8 +11,8 @@
             {{ form.image.label(class="form-label d-block") }}
             <!-- Clicking anywhere inside a label opens the associated form control (file chooser) -->
             <label class="profile-image-wrapper"> <!-- profile-image-wrapper is custom css class. -->
-                {% if profile.image %}
-                    <img src="{{ url_for('static', filename='images/' ~ profile.image) }}"
+                {% if profile.image_name %}
+                    <img src="{{ pictures_url }}/{{profile.image_name}}"
                         alt="Change profile picture"
                         class="profile-image rounded-circle border">
                 {% else %}

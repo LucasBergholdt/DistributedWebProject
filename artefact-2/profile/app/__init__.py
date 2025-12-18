@@ -28,10 +28,10 @@ class SeekerProfile(db.Model):
     birthdate = db.Column(db.Date, nullable=True)
     gender = db.Column(db.String(80), nullable=True)
     occupation = db.Column(db.String(80), nullable=True)
-    image = db.Column(db.String(500), nullable=True)    # TODO: how fully should we support this?
+    image_name = db.Column(db.String(500), nullable=True)    # TODO: how fully should we support this?
     
     @classmethod
-    def create_seekerprofile(cls, user_id, name, description, birthdate, gender, occupation, image):
+    def create_seekerprofile(cls, user_id, name, description, birthdate, gender, occupation, image_name):
         """
         Create a new seeker profile with the provided details.
 
@@ -42,7 +42,7 @@ class SeekerProfile(db.Model):
             birthdate (Date): User's date of birth
             gender (str): User's gender
             occupation (str): User's occupation
-            image (str): User's profile picture
+            image_name (str): User's profile picture
 
         Returns:
             SeekerProfile: The newly created profile object
@@ -58,7 +58,7 @@ class SeekerProfile(db.Model):
                             birthdate = birthdate,
                             gender = gender,
                             occupation = occupation,
-                            image = image
+                            image_name = image_name
                             )
         db.session.add(seekerprofile)
         print("DEBUG: About to commit new profile")
@@ -93,10 +93,10 @@ class SeekerProfile(db.Model):
             "birthdate": self.birthdate.isoformat() if self.birthdate else None,
             "gender": self.gender,
             "occupation": self.occupation,
-            "image": self.image
+            "image_name": self.image_name
         }
         
-    def replace_all_fields(self, name, description, birthdate, gender, occupation, image):
+    def replace_all_fields(self, name, description, birthdate, gender, occupation, image_name):
         """
         Replace all profile fields (PUT)
 
@@ -106,7 +106,7 @@ class SeekerProfile(db.Model):
             birthdate (Date): User's date of birth
             gender (str): User's gender
             occupation (str): User's occupation
-            image (str): User's profile picture
+            image_name (str): User's profile picture
         """
         if birthdate:
             birthdate = (date.fromisoformat(birthdate))
@@ -115,7 +115,7 @@ class SeekerProfile(db.Model):
         self.birthdate = birthdate
         self.gender = gender
         self.occupation = occupation
-        self.image = image
+        self.image_name = image_name
         db.session.commit()
         
         
@@ -165,18 +165,18 @@ def put_profile(user_id):
     birthdate = data.get("birthdate")
     gender = data.get("gender")
     occupation = data.get("occupation")
-    image = data.get("image")
+    image_name = data.get("image_name")
     
     # Find the user's profile if it exists
     profile = SeekerProfile.get_by_user_id(user_id)
     
     if profile:
         # Replace current profile with provided information
-        profile.replace_all_fields(name, description, birthdate, gender, occupation, image)
+        profile.replace_all_fields(name, description, birthdate, gender, occupation, image_name)
         status_code = 200
     else:
         # Create profile with provided information
-        profile = SeekerProfile.create_seekerprofile(user_id, name, description, birthdate, gender, occupation, image)
+        profile = SeekerProfile.create_seekerprofile(user_id, name, description, birthdate, gender, occupation, image_name)
         status_code = 201
     
     return jsonify(profile.to_dict()), status_code

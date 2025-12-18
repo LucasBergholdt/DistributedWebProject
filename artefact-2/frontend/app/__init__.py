@@ -313,7 +313,7 @@ def profile():
     profile = {} # TODO: Pre-populate data here if any? (default data)
   
   form = ProfileForm(data=profile)
-  return render_template("profiles/seeker.html", form=form, profile=profile)
+  return render_template("profiles/seeker.html", form=form, profile=profile, pictures_url = PICTURES_URL_FROM_HOST)
   
   
 @app.route("/profile", methods=['POST'])
@@ -330,13 +330,33 @@ def create_or_update_profile():
   form = ProfileForm(request.form)
   
   if form.validate():
+    image_name = None #default
+    if (form.image.data):
+
+      # Upload image
+      file_storage = form.image.data
+      files = {
+        "file": (
+          file_storage.filename,
+          file_storage.stream,  
+          file_storage.mimetype #TODO not used right now
+        )
+      }
+      response = requests.post(f"{PICTURES_API}/pictures", files = files) # By sending data as "files", it is sent as a multipart/formdata API request.
+      flash(f"Response code after uploading picture: {response.status_code}") #TODO debug
+      if response.status_code == 201:
+        # if success, update image_name
+        data = response.json()
+        image_name = data["image_name"]
+        flash("Image was uploaded! Name is" + image_name)
+
     profile_data = {
       "name": form.name.data,
       "description": form.description.data,
       "birthdate": (form.birthdate.data.isoformat() if form.birthdate.data else None),
       "gender": form.gender.data,
       "occupation": form.occupation.data,
-      "image": form.image.data
+      "image_name": form.image.data
     }
   
     response = requests.put(f"{PROFILE_API}/profiles/{user_id}", json=profile_data)
@@ -347,10 +367,10 @@ def create_or_update_profile():
     else:
       flash("Error saving profile", "error")
       # Reload site with profile data so user can just press save again without losing changes
-      return render_template("profiles/seeker.html", form=form)
+      return render_template("profiles/seeker.html", form=form,profile=profile, pictures_url = PICTURES_URL_FROM_HOST)
   else:
     flash("Invalid input", "error")
-    return render_template("profiles/seeker.html", form=form)
+    return render_template("profiles/seeker.html", form=form,profile=profile, pictures_url = PICTURES_URL_FROM_HOST)
 
 
 # COLLECTIVE ROUTES ------------------------------------------------------------------
@@ -449,7 +469,6 @@ def collectives_create():
       )
     }
 
-    # create image. #TODO ERROR HER!
     response = requests.post(f"{PICTURES_API}/pictures", files = files) # By sending data as "files", it is sent as a multipart/formdata API request.
     flash(f"Response code after uploading picture: {response.status_code}") #TODO debug
     if response.status_code == 201:

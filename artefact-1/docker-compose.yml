@@ -8,6 +8,7 @@ services:
     # working_dir: /app # debug
     ports: 
       - "5000:5000"
+
     # environment: # debug
     #   FLASK_APP: app
     #   FLASK_ENV: development

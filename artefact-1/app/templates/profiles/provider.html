@@ -11,7 +11,7 @@
         </div>
         {% if collective_entries %}
          <div class="col-6 d-flex align-items-center justify-content-end">
-            <a class="btn btn-primary btn-lg" href="{{ url_for('collectives_create') }}" role="button">Add +</a>
+            <a class="btn btn-primary btn-lg" href="{{ url_for('logic.collectives_create') }}" role="button">Add +</a>
         </div>
         {% endif %}
      </div>
@@ -20,13 +20,13 @@
   <!-- Body -->
    {% if not collective_entries %}
     <div class="container-fluid">
-        <p class="lead">You haven't submitted any collectives. Submit a new collective <a href="{{ url_for('collectives_create') }}">here</a></p>
+        <p class="lead">You haven't submitted any collectives. Submit a new collective <a href="{{ url_for('logic.collectives_create') }}">here</a></p>
     </div>
     {% else %} 
   <div class="d-flex align-items-start flex-wrap p-3 bg-light">
     {% for entry in collective_entries %}
     <div class="card mx-2 my-2" style="width: 18rem;">
-      <a href="{{ url_for('collectives_view', id=entry.id)}}"><img class="card-img-top collectiveimage" src="{{ url_for('static', filename='images/' ~ entry.image) }}" alt="Image of a collective"></a>
+      <a href="{{ url_for('logic.collectives_view', id=entry.id)}}"><img class="card-img-top collectiveimage" src="{{ url_for('static', filename='images/' ~ entry.image) }}" alt="Image of a collective"></a>
       <div class="card-body">
         <h5 class="card-title">{{ entry.street }}</h5>
         <h6 class="card-subtitle mb-2 text-muted">{{ entry.city }}</h6>
@@ -36,7 +36,7 @@
         <li class="list-group-item">{{ entry.price }} DKK</li>
       </ul>  
       <div class="card-body row">
-        <form class="col-6 d-flex justify-content-center" method="post" action="{{ url_for('collectives_delete', id=entry.id) }}">
+        <form class="col-6 d-flex justify-content-center" method="post" action="{{ url_for('logic.collectives_delete', id=entry.id) }}">
           <button type="submit" class="btn btn-outline-primary">Delete</button>
         </form>
         <form class="col-6 " method="get" action="#">

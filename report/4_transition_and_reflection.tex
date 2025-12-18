@@ -5,3 +5,27 @@ Måske komme ind på valget omkring seeker/provider vs generic user.
 \input{authentication_reflections.tex}
 
 \input{database_reflection.tex}
+
+
+
+\begin{comment}
+Noter:
+Picture service
+- Forklar de forskellige options vi undersøgte
+- Hvordan disse skabte common coupling / pass through coupling
+- Hvordan den nuværende løsning undgår dette
+- Ulemper ved løsningen
+
+Auth og Profile service:
+- hvorfor vi splittede de to services
+- security concepts vs. application data
+- kan scale dem forskelligt
+
+Lazy profile creation:
+- Vi valgte den simplere lazy creation
+- Man kunne have valgt eager creation med brug af Saga pattern
+- Trade-offs (ekstra logik i forhold til profiler der ikke eksisterer)
+
+Temporal and referential coupling bliver måske relevant med application service.
+Vi har sigtet efter kun at have domain coupling
+\end{comment}

@@ -20,7 +20,7 @@ AUTH_API = os.getenv('AUTH_API_URL')
 COLLECTIVES_API = os.getenv('COLLECTIVES_API_URL')
 PROFILE_API = os.getenv('PROFILE_API_URL')
 PICTURES_API = os.getenv('PICTURES_API_URL')
-PICTURES_URL_FROM_HOST = "http://localhost:5004/"
+PICTURES_URL_FROM_HOST = "http://localhost:5004/pictures"
 
 # Forms -----------------------------------------------------------------------
 #TODO: Smid over i anden fil og import?
@@ -166,7 +166,6 @@ def upload_image(file_storage):
       return data["image_name"]
 
 
-
 # ROUTES ----------------------------------------------------------------------
 
 @app.route("/", methods=('GET','POST'))
@@ -182,7 +181,7 @@ def landing():
     selected_entries = response.json()[0:3]
   else:
     selected_entries = {}
-  return render_template("landingpage.html", selected_entries=selected_entries)
+  return render_template("landingpage.html", selected_entries=selected_entries, pictures_url = PICTURES_URL_FROM_HOST)
 
 
 # AUTH ROUTES ------------------------------------------------------------------ 
@@ -391,9 +390,9 @@ def collectives_index():
       data={}
 
   # Fetch images from Pictures microservice. Send list of JSON objects to collectives, or just send list of picture names.
-  response = requests.get(f"{PICTURES_API}/pictures", data=data)
+  #response = requests.get(f"{PICTURES_API}/pictures", data=data)
 
-  return render_template("collectives/index.html", collective_entries=data, form=filters)
+  return render_template("collectives/index.html", collective_entries=data, form=filters, pictures_url=PICTURES_URL_FROM_HOST)
 
 #TODO: Crasher når vi går til kollektiv der ikke eksisterer.
 @app.route("/collectives/<int:id>", methods=["GET"])
@@ -401,20 +400,20 @@ def collectives_view(id):
   response = requests.get(f"{COLLECTIVES_API}/collectives/{id}")
   if response.status_code == 200:
     entry = response.json()
-    picture_url = f"{PICTURES_URL_FROM_HOST}/pictures/"
-    # flash(f"The picture URL is {picture_url}")
-    #DEBUG
-    # response = requests.get(picture_url)
-    #if response.ok:
-    #  flash("DENNE EXECUTES.")
-    #else:
-    #  flash("Denne executes".)
+    
+    # DEBUG. Fjernes når vi er sikre på at det virker.
+          # flash(f"The picture URL is {pictures_url}")
+          #DEBUG
+          # response = requests.get(pictures_url)
+          #if response.ok:
+          #  flash("DENNE EXECUTES.")
+          #else:
+          #  flash("Denne executes".)
 
-    return render_template("collectives/view.html", entry=entry, picture_url=picture_url)
+    return render_template("collectives/view.html", entry=entry, pictures_url=PICTURES_URL_FROM_HOST)
   else:
     flash("Couldn't get collective", "error")
     return redirect(url_for("collectives_index"))
-
 
 @app.route("/provider/collectives", methods=["GET", "POST"])
 @role_required("provider")
@@ -430,10 +429,8 @@ def provider_collectives():
     flash("Couldn't load your collectives", "error")
     collective_entries = {}
   
-  return render_template("profiles/provider.html", collective_entries=collective_entries)
+  return render_template("profiles/provider.html", collective_entries=collective_entries, pictures_url=PICTURES_URL_FROM_HOST)
 
-
-#TODO: Ikke testet pga. manglende image implementering
 @app.route("/collectives/create", methods=["GET", "POST"])
 @role_required("provider")
 def collectives_create():

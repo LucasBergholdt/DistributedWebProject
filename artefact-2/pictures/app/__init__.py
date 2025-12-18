@@ -98,6 +98,9 @@ with app.app_context():
   db.create_all()
 
 
+
+
+
 # ROUTES ----------------------------------------------------------------------
 # TODO: Done.
 @app.route("/pictures", methods=['POST'])

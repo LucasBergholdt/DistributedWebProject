@@ -123,6 +123,7 @@ Lorem ipsum dolor sit amet, consectetur adipiscing elit. Mauris a finibus libero
 Vestibulum vestibulum neque eu lobortis malesuada. Pellentesque euismod erat mauris, non tempor lectus vulputate sit amet. Suspendisse eget nulla sed est lobortis imperdiet eu ut dui. Integer in semper ipsum, sed blandit sem. Maecenas consectetur vitae enim eu feugiat. Etiam non consectetur lorem. Sed non elit molestie, semper nulla vitae, sagittis eros. Suspendisse ante arcu, placerat vel ligula at, bibendum tincidunt tellus. Nam semper arcu neque, sit amet vestibulum felis commodo non. Nam in aliquet justo. Nulla auctor odio semper, eleifend massa et, volutpat purus. Suspendisse sit amet eros vel justo vehicula pharetra. Aenean tristique at ipsum id malesuada.
 """
 
+# TODO deprecated. Delete.
 def create_default_collectives():
   Collective.create_collective(2, "Odense C", "Vindegade", 50, 2569, descr,"1.jpg") #submitterID = 2. provider@gmail.com.
   Collective.create_collective(2, "Odense M", "Bogense", 23, 5000, descr, "2.jpg") #submitterID = 2. provider@gmail.com.
@@ -136,7 +137,6 @@ with app.app_context():
   db.drop_all()
   db.create_all()
 #   seed_if_empty()
-  create_default_collectives()
 
 
 # ------------------------------------------ ROUTES ----------------------------------------------------------------------

@@ -1,1 +1,257 @@
 \section{Task 2: Kollektivportalen as Microservices}
+
+
+\begin{comment}
+Our microservices are implemented as REST APIs.
+
+Each microservice has a single responsibility (OO) and in accordance with the principle
+of information hiding they are encapsulated owning their own state.
+They each have their own database and if i want data from a microservice i
+have to ask it to provide me that data.
+By hiding the db we reduce coupling.
+
+We rely on just the interface of the service.
+
+Prøver at lave et system der er highly cohesive men loosely coupled.
+Microservices should be:
+- highly cohesive
+- loosely coupled
+- aligned with business capabilities, not techical ones (er pictures mere techincal?)
+
+\end{comment}
+
+%TODO: Find ud af hvordan jeg bedst muligt får integeret noget teori om REST, Single-responsibility og information hiding.
+    % kommer måske naturligt med sidste afsnit om scalability, maintainability og deployment flexibility.
+    % Kan være der skal stå mindre af dette i starten af afsnittet så.
+
+%TODO: Bør vi nævne de forskellige endpoints de har?
+
+\subsection{Service boundaries and data management}
+
+The refactored system consists of five independently deployable services, each with a distinct responsibility.
+A high-level overview of the different microservices and how they interact can be seen on figure X.
+The architecture consists of a user-facing Frontend and four microservices: Auth, Profile, Collectives and Pictures.
+
+The \textbf{Frontend} is the primary entry point for users. It acts as an orchestration layer, 
+coordinating requests across potentially multiple microservices to fulfill user interactions.
+It contains all the routes of our website and handles user interaction flows and rendering of HTML templates.
+
+The \textbf{Auth} microservice manages user authentication and session management.
+It stores a table of users in the system with their credentials and role.
+This ensures a strong security boundry, as no other service has direct access to user credentials.
+The service handles user registration and login and manages active sessions
+in the system by generating and storing a session token alongside the users id.
+Users can have multiple active sessions for instance by utilzing our service
+with different devices.
+
+The \textbf{Profile} microservice is responsible for managing the profiles of seekers.
+It stores and retrieves personal profile information such as the user's name, birthdate and
+a reference to their profile picture.
+The service exposes a single endpoint /profiles/<int:user\_id> that supports GET and PUT requests.
+The PUT request either creates a profile or replaces it with new data.
+%? Vi skal nok snakke om valget af Lazy profile creation i part 4.
+%? Skal det introduceres her eller gør vi blot det i part 4.
+%? Lige nu en mellemting der lige ultra kort nævner det her med at PUT = create/update.
+%? Kan eventuelt flettes bedre sammen med part 4 når det er skrevet.
+
+The \textbf{Collectives} microservice handles the creation and retrieval of collectives.
+It stores information such as the location, size and price of the collective aswell as a reference
+to an image of the collective. The service provides functionality to fetch all collectives, apply filters
+to narrow down the selection, or access a specific collective using its unique ID.
+
+Last but not least is the \textbf{Pictures} microservice which centralizes image storage and retrieval.
+It acceepts image uploads, stores them with a unique name and serves them on request.
+Both the Profile and Collectives services rely on this service to handle their image storage needs.
+
+
+
+\subsection{Communication flow}
+%TODO: UML Sequence diagram egner sig nok godt til at tydeliggøre forklaringen.
+
+As figure X shows, none of our microservice talk directly with eachother.
+Instead all communication goes through the frontend.
+% Hmm måske kort beskriv hvordan frontend er orchestrater, men er jo lidt sagt allerede. 
+An important implication of
+this is that the microservices themself don't check that the user is authenticated.
+It is instead the job of the frontend to ensure that the user is authorized to carry out
+the requested operation.
+The downstream services blindly trust that the frontend has authenticated the user.
+
+When the user submits their credentials to log in, the frontend calls the authentication service
+to validate these credentials. If the provided credentials are succesfully verified against the stored ones, the Auth service
+creates a new session in its database and returns the session token.
+The Frontend stores this token in a browser cookie.
+
+When users make subsquent requests that require authentication the frontend will receive
+the cookie along with this request. It once again calls Auth, this time asking it to validate
+the token. Internally Auth does this by checking if the token matches a stored token
+in its table of active sessions but the frontend does not need to know about these details.
+The frontend simply acts accordingly based on the status code of the response.
+
+This approach of having the frontend check for authentication simplifies the microservices and 
+allows for looser coupling aswell as more fine grained access control.
+However, it also requires that only the frontend is exposed to the outside world, while all the
+endpoints of the microservices are private. This design is reflected in our docker-compose file.
+
+One exception to this is the Pictures microservice which, as illustrated in the figure, is 
+accessed directly from the browser.
+When rendering images, the frontend merely embeds the image path based on the stored
+image name in the Collectives or Profile service.
+The browser then requests the image directly from the Pictures microservice.
+This follows the approach for handling images in our monolith, where requests to the static folder were 
+also exposed to the outside world, aswell as the standard web flow, where the browser first retrieves the HTML document
+and then independently fetches embedded resources. 
+
+
+\subsection{Improvements from initial design}
+%TODO: Måske kan man lave en figur der viser de forskellige aspekter og hvilke områder de improver. Lidt ala renzel
+
+The transition from the initial monolithic architecture to a distributed microservice-based architecture
+provides a series of significant improvements. 
+In the following sections we will describe how the transition improves scalability, deployment flexibility and scalability.
+While these attributes are discussed seperately many of the underlying architectural decisions
+contribute to more than one area.
+
+\subsubsection{Maintainability}
+
+One of the primary improvements of the microservice-based architecture over the 
+original monolithic design is increased maintainability.
+In the monolihtic system business logic, data access and presentation concerns were
+all tightly coupled within a single codebase. This makes changes harder to reason about
+as they span multiple layers and have increased risk of unintended side effects.
+The microservice architecture significantly improves system maintainability by decomposing the 
+system into a set of smaller focused services with clear boundaries.
+
+Each microservice has a single responsibility and can be viewed and understood in isolation. 
+This modular design makes each service and the system as whole easier to understand.
+It also allows us to reason about and modify a specific part of the system without needing a global
+understanding of the codebase.
+Compared to the monolithic design where logic was highly intertwined accross layers this seperation
+makes the system easier to debug and extend.
+This seperation of concerns also facilitates working in parallel as the different modules can be developed 
+independently, which is difficult when working within a shared codebase in the monolith.
+
+An important aspect of microservices is information hiding - the idea of 
+hiding as much information as possible and exposing as little as possible via external interfaces.
+This is enforced by encapsulation where each of our services owns its database completely and hides 
+internal logic behind a REST API.
+This allows the microservice to decide what is shared and what is hidden and seperates the internal implementation from the external contract.
+In contrast to the monoliths use of a shared database, this design significantly reduces coupling
+and allows us to more freely modify the system. 
+As long as the REST API endpoints remain unchanged we can change the implementation details
+of a microservice or even completely swap it out for another service with the same interface
+without affecting the rest of the system.
+
+
+% Hmm måske er dette ikke scope for dette afsnit. 
+% Kan ændre det til det med at det gør det lettere at arbejde i parallel eller bare helt fjerne det.
+Finally, by modelling our microservices around the business domain, we can align the architecture
+and the organisation leading to a system that also has high cohesion of business functionality.
+Each team can work on a specific part of the functionality of the site. For instance we could
+have a team dedicated to handling seeker profiles.
+This has a series of benefits both in terms of maintainability and other aspects.
+In the monolithic architecture changes typically span mutliple layers.
+If our organization is structured around these layers then these changes require
+coordination and hand-off of work between teams which can be both demotivating and
+from a business standpoint expensive.
+Thus alignin the architecture with the organization leads to empowered teams that
+can work more efficiently.
+
+
+
+%TODO: Skal nævne det her med at vi kan genbruge og kombinere microservices for ny funktionalitet et eller andet sted.
+
+
+\subsubsection{Deployment flexibility}
+
+With the monolithic architecture all functionality was packaged and deployed as a single application.
+As a result even a one-line bugfix would require us to redeploy the entire application to release the change.
+Since that is high-impact and comes with some risk it you would instead typically let changes pile up
+so they can be released all at once. However, this means that theres a higher risk that we have
+gotten something wrong and that new features are released more infrequently.
+
+With a microservice architecture each service can be deployed independently from the services that consume its API.
+This adds a lot of deployment flexibility as we can make changes to a single service, deploy it and 
+if a problem occurs easily isolate it and rollback.
+This reduces the blast radius of deployments and allows for frequent incremental changes.
+Compared to the monolithic architecture where a failed deployment could render the entire system unavailable,
+microservices instead allow problems to be contained within the affected service, which also improves the resilience of the system.
+
+However, independent deployability does not arise automatically from splitting a system into multiple services.
+It requires that the system is loosely coupled such that a change in one service doesn't necessitate coordinated
+changes and redeployment of others.
+As such aspects that helped increase the maintainability of our system compared to the monolith also improve
+the deployment flexibility. An overview is given below.
+
+\begin{itemize}
+   \item Encapsulation leads to a more loosely coupled system and allows us to be better able to create stable interfaces.
+   \item The clear service boundaries aligned with the organization means that changes tend to be localized within a single service reducing the 
+   likelihood that a feature spans multiple services requiring synchronized deployment.
+   \item REST-based APIs provide a clear interface.
+   When adhering to this interface changes remain backward compatible such that a service can be modified and 
+   redeployed without requiring changes in the services that consume its API. 
+\end{itemize}
+
+
+
+
+\subsubsection{Scalability}
+
+The microservice-based architecture also provides significant scalability improvements compared to the monolithic design.
+In the monolihtic system, the application had to be scald as a single unit.
+This means that increases in load in one part of the system would require scaling the entire applicaiton.
+Even with a multi-tiered architecture we would still have to scale all components of a layer together.
+
+The microservice architecture enables more fine-grained scaling where the individual 
+services can be scaled based on their specific load. As such we can run less requiring
+services on weaker hardware.
+Specifically in our application we would assume that the frontend and authentication service
+would require more scaling as compared to less frequently accessed services like the profile service.
+Importantly, the scaling is flexible as we on-demand can deploy additional instances or scale down
+allowing the system to more efficiently adapt to changes in usage patterns.
+
+A concrete example of this improved scalability is the implemented authentication architecture.
+By centralizing session validation in the Auth service and using tokens stored in a cookie, the Frontend service itself becomes stateless.
+This allows us to scale the Frontend horizontally by adding more instances behind a load balancer
+without the need for complex session synchronization. 
+
+A key scalability improvement is achieved through our stateless session management. By centralizing session
+validation in the Auth service and using tokens, the Frontend service itself becomes stateless. 
+This allows us to scale the Frontend horizontally by adding more instances behind a load balancer
+without needing complex session synchronization.
+Frontend instances are interchangable so incoming requests can be routed to any available instance.
+This is in sharp contrast to the monolithic architecture which would need to maintain a consistet state
+if multiple instances was deployed.
+Furthermore, by seperating authentication into its own dedicated microservice, allows us
+to scale the authentication service and frontend independently.
+
+Another perhaps less apparent way the microservice architecture improves scalability is through
+the technology-agnosticism of microservices. While our current implementation uses just the
+Flask framework in Python, the architecture allows us to pick the right tool for future services.
+
+
+
+\begin{comment}
+* Information hiding ✅
+* That each microservice own their own state (encapsulation OO principle) ✅
+   * allows it to decide what is shared and what is hidden and seperates the internal implementation from the external contract ✅
+   * Also by hiding the database we reduce coupling ✅
+* Single responsibility principle ✅
+* That each of our microservices are REST APIs ✅
+* That we have independent deployability as we can make a change to a microservice and deploy it without having to deploy other microservices ✅
+   * Easier to deploy that monolith because one line change to massive monolith would require us to deploy the entire application to relase the change. 
+   This is high risk. Instead usually you would let changes pile up so you can make a bigger release. But this means higher risk that we get something wrong. 
+   With microservices we can make a change to a single system and deploy it independently of the rest of the system. So we can release smaller releases more frequently 
+   and if a problems occur we can easily isolate it and rollback.
+* Aligning the architecture with the business domain such that each microservice is responsible for one small part of the business ✅
+   * How this leads to improved development time as more work can be done in parallel on different components and also that the seperate modules make the system 
+   easier to understand what the system does as a whole ✅
+   * Also makes it easier to roll out new features compared to monolith as in monolith changes would span many different layers and potentially across multiple teams. ✅
+* That the seperated modules give more flexibility as they can be changed independently from one another and also as they can be combined in different ways to 
+deliver new functionality ❌
+* Microservices allow us to pick the right tool for the right job as they can have seperate technologies. ✅
+* With smaller microservices we can scale just the services that need scaling instead of having to scale everything together like we did in the monolith
+   * How our choice of having session state managed my out authentication service allows us to have a stateless frontend where we can run multiple instances 
+   of the frontend service without having to synchronize stuff ✅
+
+\end{comment}

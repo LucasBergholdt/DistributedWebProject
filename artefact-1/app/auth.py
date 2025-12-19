@@ -1,17 +1,7 @@
-# Command-Line Execution: flask run --debug
-from datetime import date
-import uuid
-from flask import Blueprint, Flask, current_app, session, redirect, render_template, request, url_for, flash
-
+from flask import Blueprint, current_app, session, redirect, render_template, request, url_for, flash
 from flask_login import current_user, login_required, login_user, logout_user
-from flask_sqlalchemy import SQLAlchemy
-# from flask_login import LoginManager, login_user, logout_user, login_required, current_user, UserMixin
-# from flask_bcrypt import Bcrypt
-from flask_principal import Principal, Permission, RoleNeed, UserNeed, Identity, AnonymousIdentity, identity_changed, identity_loaded
-# from wtforms.widgets import TextArea
-from werkzeug.utils import secure_filename
-# import os
- 
+from flask_principal import Permission, RoleNeed, UserNeed, Identity, AnonymousIdentity, identity_changed
+
 from .model import Collective, User
 from .forms import LoginForm, RegistrationForm
 
@@ -23,20 +13,6 @@ provider_permission = Permission(RoleNeed("provider"))
 
 
 # SESSIONS --------------------------------------------------------------------
-
-# Initialize the LoginManager with the Flask application
-# login_manager = LoginManager(app)
-# Set the view to redirect to for unauthorized users (e.g., when @login_required is used)
-# login_manager.login_view = 'login'
-# Enable session protection to guard against session hijacking
-# 'strong' mode ensures that the session is invalidated if the user's IP or browser changes
-# login_manager.session_protection = 'strong'
-# Callback function for Flask-Login to reload the user object from the user ID 
-# stored in the session.
-# This function is required by Flask-Login to retrieve the user object whenever 
-# the application needs to know the current user. It is called when the session 
-# is accessed, and the user's ID is retrieved from the session. The function 
-# then fetches the corresponding user from the database.
 
 # @login_manager.user_loader 
 def load_user_from_id(id):
@@ -58,7 +34,7 @@ def on_identity_loaded(sender, identity):
 
 #-------------------------- ROUTES -----------------------------------------------------------------------
 
-
+# TODO: I princippet ville jeg gerne have den her i logic.py, men gjorde overgangen fra én fil lidt svær. 
 @bp.route("/", methods=['GET'])
 def landing():
   """
@@ -66,8 +42,7 @@ def landing():
 
   Shows selected collectives as advertisement. 
   """
-
-  # Denne her kan godt gøres mere nice.
+  # Future iterations could make this based on more dynamic criteria, e.g sponsored adds or a recommender system.
   selected_entries = Collective.get_all()[0:3] # Hmm, dette burde være 4, men render 3.
   return render_template("landingpage.html", selected_entries=selected_entries)
 

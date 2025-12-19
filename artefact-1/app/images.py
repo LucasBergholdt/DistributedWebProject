@@ -2,8 +2,8 @@ import uuid
 from flask import Blueprint, current_app
 from werkzeug.utils import secure_filename
 import os
-# from . import UPLOAD_FOLDERW
-import os
+
+# ----------- PART OF SEEKER AND PROVIDER DB -------- #
 
 bp = Blueprint('images', __name__)
 

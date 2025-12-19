@@ -1,5 +1,6 @@
 from flask import Blueprint, flash, redirect, request, render_template, url_for
 from flask_login import current_user, login_required
+
 from . import db
 from .auth import provider_permission, seeker_permission
 from .forms import ProfileForm, CollectiveForm, SearchForm
@@ -12,7 +13,7 @@ from flask import Blueprint
 
 bp = Blueprint('logic', __name__)
 
-
+# ------------------ ANONYMOUS --------------- #
 @bp.route("/collectives", methods=["GET"])
 def collectives_index():
     form = SearchForm(formdata=request.args)
@@ -36,22 +37,7 @@ def collectives_view(id):
     return render_template("collectives/view.html", entry=entry)
 
 
-@bp.route("/collectives/delete/<int:id>", methods=["POST"])
-def collectives_delete(id):
-    """ 
-    Deletes a collective entry. Method is POST because HTML cannot send DELETE requests. 
-    """
-    entry = Collective.get_by_id(id)
-    if entry:
-        db.session.delete(entry)
-        db.session.commit()
-        delete_picture(entry.image)
-
-        #TODO: Delete corresponding picture in database.
-        flash("Collective deleted.","success")
-    else:
-       flash("Sorry, we couldn't find the collective that you wanted to delete.", 'warning')
-    return redirect(url_for('logic.provider_collectives'))
+# --------------- SEEKER ------------- #
 
 @bp.route("/profile",methods=["GET"])
 @login_required
@@ -96,6 +82,8 @@ def put_profile():
         flash("Invalid input", "error")
         return render_template("profiles/seeker.html", form=form, profile=profile)
 
+# --------------- PROVIDER ----------------- #
+
 @bp.route("/provider/collectives",methods=["GET","POST"])
 @login_required
 @provider_permission.require()
@@ -128,4 +116,22 @@ def collectives_create():
         )
       return redirect(url_for("logic.provider_collectives"))
   return render_template("collectives/create.html", form=form)
+
+# TODO: SKAL DENNE IKKE VÆRE MED PROVIDER PERMISSION ??
+@bp.route("/collectives/delete/<int:id>", methods=["POST"])
+def collectives_delete(id):
+    """ 
+    Deletes a collective entry. Method is POST because HTML cannot send DELETE requests. 
+    """
+    entry = Collective.get_by_id(id)
+    if entry:
+        db.session.delete(entry)
+        db.session.commit()
+        delete_picture(entry.image)
+
+        #TODO: Delete corresponding picture in database.
+        flash("Collective deleted.","success")
+    else:
+       flash("Sorry, we couldn't find the collective that you wanted to delete.", 'warning')
+    return redirect(url_for('logic.provider_collectives'))
  

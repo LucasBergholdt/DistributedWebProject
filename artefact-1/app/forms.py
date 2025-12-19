@@ -13,11 +13,14 @@ from werkzeug.utils import secure_filename
 # -------------------------------- FORMS ------------------------------------- #
 # Custom validator to check if an email already exists
 # In WTForms custom validators must accept parameters form and field. So it is specified here even though it is not used.
+
+
+# --------- ALL ROLES --------- # 
+
 def email_exists(form, field):
   if User.email_exists(field.data):
     raise ValidationError('Email already exists.')
 
-# WTForms for user registration.
 class RegistrationForm(Form):
   role = SelectField('Role', 
                          choices=[('seeker', 'Seeker'), ('provider', 'Provider')], 
@@ -28,17 +31,19 @@ class RegistrationForm(Form):
   confirm = PasswordField('Confirm password', validators=[DataRequired()])
   submit = SubmitField('Register')
 
+class SearchForm(FlaskForm):
+  city = StringField('Filter by city', validators=[Length(min=1, max=80, message='You cannot have less than 1 or more than 80 characters')])
+  roomsize = IntegerField('Size of room')
+  price = IntegerField('Price in DKK')
+  submit = SubmitField('Search')
 
-class ProfileForm(FlaskForm):
-  name = StringField('Name', validators=[Optional(), Length(min=1, max=80, message='You cannot have less than 1 or more than 80 characters')])
-  description = TextAreaField('About you', validators=[Optional(), Length(max=500, message='You cannot have more than 500 characters')])
-  birthdate = DateField('Birthdate', format="%Y-%m-%d", validators=[Optional()])
-  gender = RadioField('Gender', choices=[('male', 'Male'), ('female', 'Female'), ('other', 'Other')], validators=[Optional()])
-  occupation = StringField('Occupation', validators=[Optional(), Length(min=1, max=80, message='You cannot have less than 1 or more than 80 characters')])
-  image = FileField("Profile picture", validators=[FileRequired()])
-  submit = SubmitField('Save Profile')
+class LoginForm(Form):
+  email = EmailField('Email', validators=[DataRequired(), Email()])
+  password = PasswordField('Password', validators=[DataRequired()])
+  remember = BooleanField('Remember Me')
+  submit = SubmitField('Login')
 
-
+# --------- PROVIDERS --------- #
 class CollectiveForm(FlaskForm):
   #address = StringField('Address of collective', validators=[DataRequired(), Length(min=1, max=80, message='You cannot have less than 1 or more than 80 characters')])
   city = StringField('Name of city', validators=[DataRequired(), Length(min=1, max=80, message='You cannot have less than 1 or more than 80 characters')])
@@ -54,12 +59,17 @@ class CollectiveForm(FlaskForm):
 
   submit = SubmitField('Register your collective')
 
-class SearchForm(FlaskForm):
-  city = StringField('Filter by city', validators=[Length(min=1, max=80, message='You cannot have less than 1 or more than 80 characters')])
-  roomsize = IntegerField('Size of room')
-  price = IntegerField('Price in DKK')
-  submit = SubmitField('Search')
+# ------------ SEEKERS --------- #
+  class ProfileForm(FlaskForm):
+    name = StringField('Name', validators=[Optional(), Length(min=1, max=80, message='You cannot have less than 1 or more than 80 characters')])
+    description = TextAreaField('About you', validators=[Optional(), Length(max=500, message='You cannot have more than 500 characters')])
+    birthdate = DateField('Birthdate', format="%Y-%m-%d", validators=[Optional()])
+    gender = RadioField('Gender', choices=[('male', 'Male'), ('female', 'Female'), ('other', 'Other')], validators=[Optional()])
+    occupation = StringField('Occupation', validators=[Optional(), Length(min=1, max=80, message='You cannot have less than 1 or more than 80 characters')])
+    image = FileField("Profile picture", validators=[FileRequired()])
+    submit = SubmitField('Save Profile')
 
+# -------- NOT USED ----------- #
 class ApplicationForm(Form):
   description = StringField('Your application', validators=[DataRequired(), Length(min=1, max=80, message='You cannot have less than 1 or more than 80 characters')])
   submit = SubmitField('Apply for this collective')
@@ -76,9 +86,3 @@ class ApplicationForm(Form):
 # handling infrastructure.
 # -----------------------------------------------------------------------------
 
-# WTForms for user login
-class LoginForm(Form):
-  email = EmailField('Email', validators=[DataRequired(), Email()])
-  password = PasswordField('Password', validators=[DataRequired()])
-  remember = BooleanField('Remember Me')
-  submit = SubmitField('Login')

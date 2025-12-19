@@ -1,4 +1,82 @@
+\newpage
 \section{Task 1: Kollektivportalen as Monolith}
 
-The section will provide a high-level overview of our codebase for the monolithic implementation, and also try to map these concrete components to the high level functionality of our service. 
+% overvej at beskrive blueprint? nok ikke nødvendigt?
 
+The section will provide a high-level overview of our codebase for the monolithic implementation, and try to map the concrete components to the functionality of our service. 
+It also serves to introduce and document the degree of cohesion and coupling throughout the monolithic system.
+
+FORKLAR OVERORDNET OVERBLIK, BRUG DE RETTE BEGREBER TIL AT BESKRIVE TILGANG
+
+Our monolith follows a 1-tier layered approach, a modular monolith, deployed as a single unit thorugh the \verb|__init__| initialization of the Flask Blueprint framework. 
+% Our aim for the monolith has been to organize the code into modules based on their logical separation and responsibility. 
+The monolith is logically organized in layers; each layer with its own responsibility. This means, that we utilize a one-way communication from the Presentation Layer, to the Business Logic Layer and the Database Layer.
+Importantly, we can partition each layer of our system into three subcategories based on their relation to the problem domain of Seekers, Providers or Anonymous users (Figure \ref{fig:container_monolith}). 
+Each subcategory within a layer is responsible for the domain driven functionality of that particular layer. This means, that even though we have grouped our system in horizontal layers, each subcategory of an upper layer is dependent on the components of the same subcategory of the layer below. Making any changes to the system therefore requires attention and often manipulation of all three layers, as the problem domain, represented by a subcategory of components, has to be present in all layers. 
+
+The Presentation layer consists of the static content in the form of HTML and CSS in \verb|templates| and \verb|static| folders, which are directly coupled with the Business Layer via custom Jinja-conditionals for displaying the correct data. 
+Our domain problem of matching Seekers with Providers of collectives is therefore solved via the pages we render towards the user, and the users interaction with these pages. Each page is visually displayed by the presentation layer, that handles the static structure and styling of the content. 
+The styling utilises the framework Bootstrap, that provides easier development and consistency of the visual identity throughout the site.
+The pages rendered will depend on the identity of that user; whether the user is a Seeker, a Provider or Anonymous (not logged in), which exemplifies how the presentation layer is dependent on the business layer.
+
+The business layer implements the logic that solves the domain problem. Via the business layer, consisting of the files \verb|auth.py|, \verb|logic.py| and \verb|forms.py|. \verb|auth.py| is responsible for recieving the user, their authorization and session management, hereby granting the access to the functionality of our site. This is done via the Flask-Principal framework, and by defining custom permissions for our specific roles. 
+
+
+
+
+
+The Database Layer consists of the files \verb|model.py| and \verb|images.py|.
+
+
+
+
+
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=\linewidth]{img/Kollektivportalen_container_v2.png}
+    \caption{High-level overview}
+    \label{fig:container_monolith}
+\end{figure}
+
+
+% Husk at center ordenligt
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=1.1\linewidth]{img/zoom_in_business.png}
+    \caption{Zoom in on the business layer}
+    \label{fig:zoom_in_monolith}
+\end{figure}
+
+
+
+
+This encompass landing page, login page, register page and logout page. Dependencies of this module are \verb|forns.py| for getting the data transmission and \verb|model.py| for database transactions. 
+
+
+FORKLAR HVORDAN KOMMUNIKATIONEN FOREGÅR
+
+FORKLAR DE ENKELTE MODULER 
+
+
+
+\verb|forms.py|
+images.py
+logic.py
+
+The Model layer consists of the storage of domain entities, which are the \verb|Collective|, \verb|User|, \verb|SeekerProfile| classes.
+
+
+
+
+model.py
+
+BESKRIV COUPLING OG COHESION I DETTE SYSTEM, hvordan taler det sammen. 
+
+
+GIV ÅRSAG TIL, AT DEN ER STRUKTURERET SÅLEDES
+
+A monolith is a sensible starting point for our software project, as  
+The main advantage of our monolithic approach is that we are avoiding the unnecessary complexity of distributed parts. 
+
+\textbf{Skal jeg skrive noget om docker her?!}

@@ -7,8 +7,9 @@ The section will provide a high-level overview of our codebase for the monolithi
 It also serves to introduce and document the degree of cohesion and coupling throughout the monolithic system.
 
 FORKLAR OVERORDNET OVERBLIK, BRUG DE RETTE BEGREBER TIL AT BESKRIVE TILGANG
+GIV ÅRSAG TIL, AT DEN ER STRUKTURERET SÅLEDES, SOLID?
 
-Our monolith follows a 1-tier layered approach, a modular monolith, deployed as a single unit thorugh the \verb|__init__| initialization of the Flask Blueprint framework. 
+Our monolith follows a 1-tier layered approach, a modular monolith, deployed as a single unit thorugh the \verb|__init__| initialization of the Flask Blueprint framework. The unit is deployed via a Docker container, and can be ran following the instructions in the \verb|README.md| file. 
 % Our aim for the monolith has been to organize the code into modules based on their logical separation and responsibility. 
 The monolith is logically organized in layers; each layer with its own responsibility. This means, that we utilize a one-way communication from the Presentation Layer, to the Business Logic Layer and the Database Layer.
 Importantly, we can partition each layer of our system into three subcategories based on their relation to the problem domain of Seekers, Providers or Anonymous users (Figure \ref{fig:container_monolith}). 
@@ -19,13 +20,46 @@ Our domain problem of matching Seekers with Providers of collectives is therefor
 The styling utilises the framework Bootstrap, that provides easier development and consistency of the visual identity throughout the site.
 The pages rendered will depend on the identity of that user; whether the user is a Seeker, a Provider or Anonymous (not logged in), which exemplifies how the presentation layer is dependent on the business layer.
 
-The business layer implements the logic that solves the domain problem. Via the business layer, consisting of the files \verb|auth.py|, \verb|logic.py| and \verb|forms.py|. \verb|auth.py| is responsible for recieving the user, their authorization and session management, hereby granting the access to the functionality of our site. This is done via the Flask-Principal framework, and by defining custom permissions for our specific roles. 
+The business layer implements the logic that solves the domain problem via the files \verb|auth.py|, \verb|logic.py| and \verb|forms.py|.
+This is the layer with the highest interdependence between components. The grouping and relationship of components can be seen in figure \ref{fig:zoom_in_monolith}.
+The main logic is stored in \verb|logic.py|, and within this file we consider the beforementioned subcategories of logic. The Provider Logic solves the task of allowing a Provider to view, create and delete their collectives. The Seeker Logic solves the task of allowing a seeker to view and update their own profile. 
+Importantly, the common logic represents the universally available functionality for all user types; the landing page and the overview of collectives. 
+All this logic is dependent on manipulating data from the Database, which is represented by the outer arrow fron the total \verb|logic.py| container to the Database layer. 
+Both the seeker and the provider logic is dependent on the authentication of the current user, data about their session, in order to be carried out. This dependency is represented via the thick line from the two components towards the \verb|auth.py| component. \textbf{BESKRIV DEN KONKRETE FORSKELLIG TYPE AF COUPLING}
 
+All modules and subcategories in the business layer is dependent on the \verb|forms.py| in order achieve their respective interaction with the user, however, each form is independent from eachother, so we could also have stored the relevant form inside of the relevant logic. It therefore maintains a pure data coupling.
 
+The Model layer consists of the storage of domain entities in \verb|model.py|, which are the \verb|Collective|, \verb|User|, \verb|SeekerProfile| classes. \verb|images.py| has the responsibility of providng image handling capabilities.
 
-
+UNDERSØG IMAGE COUPLING TIL DE ANDRE KLASSER.
+DU MANGLER AT INDSÆTTE IMAGES.PY I DIN FIGUR.
 
 The Database Layer consists of the files \verb|model.py| and \verb|images.py|.
+
+BESKRIV HVORFOR VI VALGTE EN MONOLITH VS N-TIER
+\\ A monolith is a sensible starting point for our software project, as  
+The main advantage of our monolithic approach is that we are avoiding the unnecessary complexity of distributed parts. 
+
+
+SKRIV OM FORDELENE VED DENNE TILGANG
+
+FORKLAR HVORDAN KOMMUNIKATIONEN FOREGÅR
+Importantly, the monolithic structure provides speed in terms of ... as the links are not via ... but instead ... 
+
+
+SKRIV OM ULEMPERNE VED DENNE TILGANG
+
+
+Importantly, we distinguish between two forms of dependence here.
+
+
+
+
+
+
+
+
+
 
 
 
@@ -35,7 +69,7 @@ The Database Layer consists of the files \verb|model.py| and \verb|images.py|.
 \begin{figure}[H]
     \centering
     \includegraphics[width=\linewidth]{img/Kollektivportalen_container_v2.png}
-    \caption{High-level overview}
+    \caption{High-level overview \\ *Applications have not been implemented}
     \label{fig:container_monolith}
 \end{figure}
 
@@ -47,36 +81,3 @@ The Database Layer consists of the files \verb|model.py| and \verb|images.py|.
     \caption{Zoom in on the business layer}
     \label{fig:zoom_in_monolith}
 \end{figure}
-
-
-
-
-This encompass landing page, login page, register page and logout page. Dependencies of this module are \verb|forns.py| for getting the data transmission and \verb|model.py| for database transactions. 
-
-
-FORKLAR HVORDAN KOMMUNIKATIONEN FOREGÅR
-
-FORKLAR DE ENKELTE MODULER 
-
-
-
-\verb|forms.py|
-images.py
-logic.py
-
-The Model layer consists of the storage of domain entities, which are the \verb|Collective|, \verb|User|, \verb|SeekerProfile| classes.
-
-
-
-
-model.py
-
-BESKRIV COUPLING OG COHESION I DETTE SYSTEM, hvordan taler det sammen. 
-
-
-GIV ÅRSAG TIL, AT DEN ER STRUKTURERET SÅLEDES
-
-A monolith is a sensible starting point for our software project, as  
-The main advantage of our monolithic approach is that we are avoiding the unnecessary complexity of distributed parts. 
-
-\textbf{Skal jeg skrive noget om docker her?!}

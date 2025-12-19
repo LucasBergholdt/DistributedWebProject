@@ -20,8 +20,8 @@ class Collective(db.Model):
     city = db.Column(db.String(500))
     street = db.Column(db.String(500))
 
-    roomsize = db.Column(db.Integer())
-    price = db.Column(db.Integer())
+    roomsize = db.Column(db.Integer)
+    price = db.Column(db.Double)
     
     description = db.Column(db.String(5000)) # todo: ændret til 5000, da debug strengen er for lang til 500. Hvorofr virker det så i monolith?
     image_name = db.Column(db.String(5000))

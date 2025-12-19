@@ -1,5 +1,4 @@
 import os
-
 from flask import Flask
 from flask_sqlalchemy import SQLAlchemy
 from flask_login import LoginManager
@@ -53,22 +52,18 @@ def create_app(test_config=None):
     login_manager.init_app(app) 
     principals.init_app(app)
 
-    # Configuring login_manager settings
+    # configuring login_manager settings
     login_manager.login_view = 'auth.login'
     login_manager.session_protection = 'strong'
 
-    # Registering callback functions for login_manager and principal
+    # registering callback functions for login_manager and principal
     from . import auth
     login_manager.user_loader(auth.load_user_from_id)
     identity_loaded.connect_via(app)(auth.on_identity_loaded)
 
-    # # Registering init-db CLI command
-    # from .model import init_db_command
-    # app.cli.add_command(init_db_command)
-
     # Registering the blueprints to the app
     app.register_blueprint(auth.bp)
-    app.add_url_rule('/', endpoint='landing') # login is default route
+    app.add_url_rule('/', endpoint='landing') # landing page is default route
 
     from . import logic
     app.register_blueprint(logic.bp)

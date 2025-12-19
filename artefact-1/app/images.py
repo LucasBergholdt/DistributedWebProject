@@ -8,6 +8,15 @@ import os
 bp = Blueprint('images', __name__)
 
 def is_allowed_file_extension(filename):
+    """
+    Checks that the extension of provided filename is supported.
+
+    Args:
+        filename (str): the name of the file
+
+    Returns:
+        bool: true if extension is supported, otherwise false
+    """
     allowed = current_app.config.get('ALLOWED_EXTENSIONS', set())
     return '.' in filename and \
            filename.rsplit('.', 1)[1].lower() in allowed

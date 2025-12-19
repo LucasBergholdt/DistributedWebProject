@@ -1,28 +1,20 @@
 from flask.cli import with_appcontext
 from flask_login import UserMixin
 from . import db, bcrypt
-
 from .images import delete_picture
 
 
-# ------- COMMON -------- #
+# ------- COMMON MODELS FOR ALL USERS -------- #
 
 class User(UserMixin, db.Model):
     """
     User model representing a user in the application.
     Inherits from both UserMixin and db.Model to integrate Flask-Login and SQLAlchemy.
 
-    UserMixin provides default implementations for the methods that Flask-Login
-    expects user objects to have:
-    - is_authenticated: Property that should return True if the user is authenticated.
-    - is_active: Property that should return True if the user is active.
-    - is_anonymous: Property that should return False for regular users.
-    - get_id(): Method that returns a unique identifier for the user as a string.
-
-    By inheriting from UserMixin, the User class automatically gets these methods,
-    making it compatible with Flask-Login's user management system.
+    By inheriting from UserMixin, the User class is automatically compatible with
+    Flask-Login's user management system.
     """
-
+    
     __tablename__ = 'users'
 
     # Primary key
@@ -31,18 +23,14 @@ class User(UserMixin, db.Model):
     email      = db.Column(db.String(60), unique=True, index=True)
     # User's password, stored as a hash
     password   = db.Column(db.String(80))
-    # User's name, not used for identification (just an example of an extra field)
-    # name = db.Column(db.String(80), nullable=False)
     # User's role, used for role-based access control. "seeker", "provider"
     role = db.Column(db.String(80), nullable=False)
-
+    
     # One-Many relationship between User and Application
     applications = db.relationship("Application", back_populates="user")
-
     # One-Many relationship between User and Collective
     collectives = db.relationship("Collective", back_populates="user")
-
-    #seekerprofile = db.relationship("Seekerprofile", back_populates="user")
+    
 
     def check_password(self, password):
         """
@@ -56,7 +44,6 @@ class User(UserMixin, db.Model):
         """
         return bcrypt.check_password_hash(self.password, password)
 
-    #TODO: Mange felter bliver efterladt null. Lav evt ny side/viewfunction hvor user kan udfylde sine informationer.
     @classmethod
     def create_user(cls, role, email, password):
       """
@@ -70,12 +57,10 @@ class User(UserMixin, db.Model):
       Returns:
           User: The newly created user object.
       """
-      
       user = cls( role     = role.strip(),
                   email    = email.strip(),
                   password = bcrypt.generate_password_hash(password).decode('utf-8'),
                 )
-                  # evt også image.
       db.session.add(user)
       db.session.commit()
       return user
@@ -119,13 +104,13 @@ class User(UserMixin, db.Model):
       """
       email = User.query.filter_by(email=email).first()
       return email is not None
+   
     
-# ----------- SEEKER ----------- #
-
+    
+# ------- SEEKER SPECIFIC MODELS -------- #
 class SeekerProfile(db.Model):
     __tablename__ = 'seekerprofiles'
 
-    # Primary key
     id = db.Column(db.Integer, primary_key=True)
     user_id = db.Column(db.Integer, db.ForeignKey('users.id'), unique=True, nullable=False)
     name = db.Column(db.String(80), nullable=True)
@@ -133,7 +118,7 @@ class SeekerProfile(db.Model):
     birthdate = db.Column(db.Date, nullable=True)
     gender = db.Column(db.String(80), nullable=True)
     occupation = db.Column(db.String(80), nullable=True)
-    image = db.Column(db.String(500), nullable=True)
+    image = db.Column(db.String(500), nullable=True) # image name
 
     @classmethod
     def create_seekerprofile(cls, user_id, name, description, birthdate, gender, occupation, image):
@@ -142,25 +127,24 @@ class SeekerProfile(db.Model):
 
         Args:
             user_id (int): User's id
-            name (str): User's name
-            description (str): A description of the user
-            birthdate (Date): User's date of birth
-            gender (str): User's gender
-            occupation (str): User's occupation
-            image (str): User's profile picture
+            name (str | None): User's name
+            description (str | None): A description of the user
+            birthdate (Date | None): User's date of birth
+            gender (str | None): User's gender
+            occupation (str | None): User's occupation
+            image (str| None): User's profile picture
 
         Returns:
             SeekerProfile: The newly created profile object
         """
-        #TODO Har fjernet .strip() fordi felterne godt kan være None. Men vi skal nok stadig have strip funktionalitet.
         seekerprofile = cls(
-                            user_id = user_id,
-                            name = name,
+                            user_id     = user_id,
+                            name        = name,
                             description = description,
-                            birthdate = birthdate,
-                            gender = gender,
-                            occupation = occupation,
-                            image = image
+                            birthdate   = birthdate,
+                            gender      = gender,
+                            occupation  = occupation,
+                            image       = image
                             )
         db.session.add(seekerprofile)
         db.session.commit()
@@ -204,25 +188,24 @@ class SeekerProfile(db.Model):
             delete_picture(self.image)
             self.image = image
         # If given image is None, we don't change the current image.
-        # User needs to explicitly delete profile picture if they want that.
+        # User needs to explicitly delete profile picture (unsupported) if they want that.
 
         db.session.commit()
 
-# -------------- PROVIDER ----------- #
+
+
+# ------- PROVIDER SPECIFIC MODELS -------- #
 class Collective(db.Model):
     __tablename__ = 'collectives'
 
     id = db.Column(db.Integer, primary_key=True)
     submitter_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False)
-
-    city = db.Column(db.String(80))
-    street = db.Column(db.String(80))
-
-    roomsize = db.Column(db.Integer())
-    price = db.Column(db.Integer())
-
-    description = db.Column(db.String(500))
-    image = db.Column(db.String(500))   #image name.
+    city = db.Column(db.String(80), nullable=False)
+    street = db.Column(db.String(80), nullable=False)
+    roomsize = db.Column(db.Integer, nullable=False)
+    price = db.Column(db.Double, nullable=False)
+    description = db.Column(db.String(500), nullable=False)
+    image = db.Column(db.String(500), nullable=False) #image name.
   
     # Many-One relationship between Collective and User
     user = db.relationship("User", back_populates="collectives")
@@ -231,26 +214,66 @@ class Collective(db.Model):
 
     @staticmethod
     def get_all():
-        """Get all Collectives"""
+        """
+        Retrieve all collectives
+
+        Returns:
+            List: A list of all the collectives in the database
+        """
         return Collective.query.order_by(Collective.id).all()
 
     @staticmethod
     def get_by_id(id):
-        """Get collective by their ID"""
+        """
+        Retrieve a collective by its ID
+
+        Args:
+            id (int): The ID of the collective
+
+        Returns:
+            Collective: The collective object if found, otherwise None.
+        """
         return Collective.query.filter_by(id=id).first()
 
     @staticmethod
     def get_by_submitter(user_id):
-        """Get all Collectives submitted by a specific user"""
+        """
+        Retrieve all collectives submitted by a specific user (provider)
+
+        Args:
+            user_id (int): The ID of the user
+
+        Returns:
+            List: A list of all the user's collectives
+        """
         return Collective.query.filter_by(submitter_id=user_id).all()
     
     @staticmethod
     def get_by_city(city):
-        """Get all Collectives which cityname has given argument as prefix)"""
+        """
+        Retrieve collectives by a specific city.
+        Gets collectives in cities that have the given city argument as prefix.
+
+        Args:
+            city (str): The name of a city
+
+        Returns:
+            List: A list of all found collectives
+        """
         return Collective.query.filter(Collective.city.startswith(city)).all()
     
     def get_by_filters(city=None, roomsize=None, price=None):
-        """Filters collectives by multiple filters."""
+        """
+        Filters collectives by multiple filters.
+
+        Args:
+            city (str, optional): The city the collective should be in. Defaults to None.
+            roomsize (int, optional): The minimum size of the room. Defaults to None.
+            price (float, optional): The maximum price. Defaults to None.
+
+        Returns:
+            List: A list of all collectives matching the provided filters
+        """
         # Fetch all queries.
         query = Collective.query
 
@@ -267,33 +290,70 @@ class Collective(db.Model):
 
     @classmethod
     def create_collective(cls, submitter_id, city, street, roomsize, price, description, image):
-      """
-      Create a new collective with the provided details.
+        """
+        Create a new collective with the provided details.
 
-      Args:
-          name (str): The collective's name.
-          email (str): The collective's email.
-          password (str): The collective's password, which will be hashed before storage.
+        Args:
+            submitter_id (int): The ID of the provider
+            city (str): The city the collective is located in
+            street (str): The name of the street
+            roomsize (int): The size of the room in m^2
+            price (double): The price of the room
+            description (int): A description of the collective
+            image (str): The name of the image of the collective
 
-      Returns:
-          collective: The newly created collective object.
-      """
-      
-      collective = cls(
-          submitter_id = submitter_id,
-          city = city.strip(),
-          street = street.strip(),
-          roomsize = roomsize,
-          price = price,
-          description = description.strip(),
-          image = image.strip()
-      )
-                  
-      db.session.add(collective)
-      db.session.commit()
-      return collective
+        Returns:
+            Collective: The newly created collective object
+        """
+        collective = cls(
+            submitter_id = submitter_id,
+            city = city.strip(),
+            street = street.strip(),
+            roomsize = roomsize,
+            price = price,
+            description = description.strip(),
+            image = image.strip()
+        )
+                    
+        db.session.add(collective)
+        db.session.commit()
+        return collective
 
-# -------------- UNFINISHED ------------- #
+
+# ---------------- Initializing default data ---------------- #
+def create_default_userbase():
+  existing_seeker = User.query.filter_by(role="seeker").first()
+  if not existing_seeker:
+     User.create_user("seeker", "seeker@gmail.com", "123")
+  existing_provider = User.query.filter_by(role="provider").first()
+  if not existing_provider:
+     User.create_user("provider", "provider@gmail.com", "123")
+
+
+descr = """
+Lorem ipsum dolor sit amet, consectetur adipiscing elit. Mauris a finibus libero, at elementum urna. Sed dictum dapibus ornare. Maecenas egestas molestie vulputate. Donec maximus, ipsum a rhoncus eleifend, urna turpis volutpat mauris, id faucibus tellus turpis convallis tellus. Suspendisse a augue aliquet, dapibus risus et, condimentum turpis. Morbi finibus ultricies cursus. Nullam commodo felis eu facilisis lacinia. Class aptent taciti sociosqu ad litora torquent per conubia nostra, per inceptos himenaeos.
+
+Vestibulum vestibulum neque eu lobortis malesuada. Pellentesque euismod erat mauris, non tempor lectus vulputate sit amet. Suspendisse eget nulla sed est lobortis imperdiet eu ut dui. Integer in semper ipsum, sed blandit sem. Maecenas consectetur vitae enim eu feugiat. Etiam non consectetur lorem. Sed non elit molestie, semper nulla vitae, sagittis eros. Suspendisse ante arcu, placerat vel ligula at, bibendum tincidunt tellus. Nam semper arcu neque, sit amet vestibulum felis commodo non. Nam in aliquet justo. Nulla auctor odio semper, eleifend massa et, volutpat purus. Suspendisse sit amet eros vel justo vehicula pharetra. Aenean tristique at ipsum id malesuada.
+"""
+
+def create_default_collectives():
+  Collective.create_collective(2, "Odense C", "Vindegade", 50, 2569, descr,"1.jpg") #submitterID = 2. provider@gmail.com.
+  Collective.create_collective(2, "Odense M", "Bogense", 23, 5000, descr, "2.jpg") #submitterID = 2. provider@gmail.com.
+  Collective.create_collective(2, "Odense M", "Stige", 35, 4000, descr, "3.jpg") #submitterID = 2. provider@gmail.com.
+
+
+# Create tables within the application context
+def init_db(app):
+    with app.app_context():
+        db.create_all()
+        create_default_userbase()
+        create_default_collectives()
+
+
+
+
+
+# -------------- UNFINISHED AND UNUSED APPLICATION MODEL ------------- #
 
 class Application(db.Model):
     """Placeholder Application model """
@@ -303,7 +363,7 @@ class Application(db.Model):
     submitter_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False)
     collective_id = db.Column(db.Integer, db.ForeignKey('collectives.id'), nullable=False)
 
-    time_of_submission = db.Column(db.DateTime, nullable=True)  #TODO: Lav automatisk.
+    time_of_submission = db.Column(db.DateTime, nullable=True)
     description = db.Column(db.String(500))
 
     # Many-One relationship between Application and User
@@ -350,44 +410,3 @@ class Application(db.Model):
       db.session.add(application)
       db.session.commit()
       return application
-
-# ---------------- Initializing default data ---------------- #
-def create_default_userbase():
-  existing_seeker = User.query.filter_by(role="seeker").first()
-  if not existing_seeker:
-     User.create_user("seeker", "seeker@gmail.com", "123")
-  existing_provider = User.query.filter_by(role="provider").first()
-  if not existing_provider:
-     User.create_user("provider", "provider@gmail.com", "123")
-
-
-descr = """
-Lorem ipsum dolor sit amet, consectetur adipiscing elit. Mauris a finibus libero, at elementum urna. Sed dictum dapibus ornare. Maecenas egestas molestie vulputate. Donec maximus, ipsum a rhoncus eleifend, urna turpis volutpat mauris, id faucibus tellus turpis convallis tellus. Suspendisse a augue aliquet, dapibus risus et, condimentum turpis. Morbi finibus ultricies cursus. Nullam commodo felis eu facilisis lacinia. Class aptent taciti sociosqu ad litora torquent per conubia nostra, per inceptos himenaeos.
-
-Vestibulum vestibulum neque eu lobortis malesuada. Pellentesque euismod erat mauris, non tempor lectus vulputate sit amet. Suspendisse eget nulla sed est lobortis imperdiet eu ut dui. Integer in semper ipsum, sed blandit sem. Maecenas consectetur vitae enim eu feugiat. Etiam non consectetur lorem. Sed non elit molestie, semper nulla vitae, sagittis eros. Suspendisse ante arcu, placerat vel ligula at, bibendum tincidunt tellus. Nam semper arcu neque, sit amet vestibulum felis commodo non. Nam in aliquet justo. Nulla auctor odio semper, eleifend massa et, volutpat purus. Suspendisse sit amet eros vel justo vehicula pharetra. Aenean tristique at ipsum id malesuada.
-"""
-
-def create_default_collectives_applications(): # TODO: Fjern "applications", det er vel mere "advertisements"? /Lasse
-  Collective.create_collective(2, "Odense C", "Vindegade", 50, 2569, descr,"1.jpg") #submitterID = 2. provider@gmail.com.
-  Collective.create_collective(2, "Odense M", "Bogense", 23, 5000, descr, "2.jpg") #submitterID = 2. provider@gmail.com.
-  Collective.create_collective(2, "Odense M", "Stige", 35, 4000, descr, "3.jpg") #submitterID = 2. provider@gmail.com.
-
-  # Application.create_application(1, 1, "Jeg hedder Alice og vil gerne søge ind på kollektivet på Skovbogade.")
-
-
-# Create tables within the application context
-# TODO: Does not clear tables anymore - seemed unnecessary? /Lasse
-def init_db(app):
-    with app.app_context():
-        db.create_all()
-        create_default_userbase()
-        create_default_collectives_applications()
-
-
-
-# @click.command('init-db')
-# @with_appcontext
-# def init_db_command():
-#   """Clear the existing data and create new tables with default userbase and collectives"""
-#   init_db()
-#   click.echo("Initialized the database.")

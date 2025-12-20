@@ -1,8 +1,8 @@
 FROM python:3.11-slim
 
-WORKDIR /app
+WORKDIR /service
 
-# Copy everything in frontend folder
+# Copy everything in auth folder
 COPY . .
 
 # Install dependencies

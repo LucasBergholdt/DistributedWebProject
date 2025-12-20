@@ -10,7 +10,6 @@ services:
       - COLLECTIVES_API_URL=http://collectives:5000
       - PROFILE_API_URL=http://profile:5000
       - PICTURES_API_URL=http://pictures:5000
-    #TODO: FOR DEBUGGING
     volumes:                    # debug
       - ./frontend:/app         # debug
     command: flask run --debug  # debug
@@ -19,63 +18,19 @@ services:
       - collectives
       - profile
       - pictures
+
   auth:
     build: ./auth
     expose:
-      - "5000" # tilgå logic på 5001 porten
+      - "5000"
     environment:
       - DATABASE_URL=postgresql://postgres:postgres@auth_db:5432/postgres
-    #TODO: FOR DEBUGGING
     volumes:                    # debug
       - ./auth:/app             # debug
     command: flask run --debug  # debug
     depends_on:
       auth_db:
-        condition: service_healthy
-  
-  collectives:
-    build: ./collectives
-    expose:
-      - "5000"  # Expose collectives service
-    environment:
-      - DATABASE_URL=postgresql://postgres:postgres@collectives_db:5432/postgres
-    #TODO: FOR DEBUGGING
-    volumes:                    # debug
-      - ./collectives/:/app     # debug
-    command: flask run --debug  # debug
-    depends_on:
-      collectives_db:
-        condition: service_healthy
-
-  profile:
-    build: ./profile
-    expose:
-      - "5000"  # Expose profile service
-    environment:
-      - DATABASE_URL=postgresql://postgres:postgres@profile_db:5432/postgres
-    #TODO: FOR DEBUGGING
-    volumes:                    # debug
-      - ./profile/:/app     # debug
-    command: flask run --debug  # debug
-    depends_on:
-      profile_db:
-        condition: service_healthy
-
-  pictures:
-    build: ./pictures
-    ports:
-      - "5004:5000"  # Expose pictures service
-    environment:
-      - DATABASE_URL=postgresql://postgres:postgres@pictures_db:5432/postgres
-    #TODO: FOR DEBUGGING
-    volumes:                    # debug
-      - ./pictures/:/app     # debug
-    command: flask run --debug  # debug
-    depends_on:
-      pictures_db:
-        condition: service_healthy
-
-
+        condition: service_healthy                  # service's "healthiness" is assessed by the field "healthcheck"
   auth_db:
     image: postgres:17
     environment:
@@ -84,12 +39,24 @@ services:
       POSTGRES_DB: postgres
     volumes:
       - auth_pgdata:/var/lib/postgresql/data
+    healthcheck:                                    # determines if a service is "healthy" by running running the command in 'test'. https://docs.docker.com/reference/compose-file/services/#healthcheck
+      test: ["CMD-SHELL", "pg_isready -U postgres"] # command to check if service is healthy
+      retries: 5                                    # amount of retries before service is considered unhealthy
+      interval: 5s                                  # first check is run 5s after service has started, then 5s after each previous check completes
+      timeout: 5s                                   # if a test takes more than 5s to complete, the check is considered to have failed
 
-    healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U postgres"]
-      interval: 5s
-      timeout: 5s
-      retries: 5
+  collectives:
+    build: ./collectives
+    expose:
+      - "5000"
+    environment:
+      - DATABASE_URL=postgresql://postgres:postgres@collectives_db:5432/postgres
+    volumes:                    # debug
+      - ./collectives/:/app     # debug
+    command: flask run --debug  # debug
+    depends_on:
+      collectives_db:
+        condition: service_healthy
 
   collectives_db:
     image: postgres:17
@@ -99,12 +66,24 @@ services:
       POSTGRES_DB: postgres
     volumes:
       - collectives_pgdata:/var/lib/postgresql/data
-
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U postgres"]
       interval: 5s
       timeout: 5s
       retries: 5
+
+  profile:
+    build: ./profile
+    expose:
+      - "5000"
+    environment:
+      - DATABASE_URL=postgresql://postgres:postgres@profile_db:5432/postgres
+    volumes:                    # debug
+      - ./profile/:/app     # debug
+    command: flask run --debug  # debug
+    depends_on:
+      profile_db:
+        condition: service_healthy
 
   profile_db:
     image: postgres:17
@@ -114,12 +93,24 @@ services:
       POSTGRES_DB: postgres
     volumes:
       - profile_pgdata:/var/lib/postgresql/data
-
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U postgres"]
       interval: 5s
       timeout: 5s
       retries: 5
+
+  pictures:
+    build: ./pictures
+    ports:
+      - "5004:5000"                                   # Expose pictures service
+    environment:
+      - DATABASE_URL=postgresql://postgres:postgres@pictures_db:5432/postgres
+    volumes:                    # debug
+      - ./pictures/:/app     # debug
+    command: flask run --debug  # debug
+    depends_on:
+      pictures_db:
+        condition: service_healthy
 
   pictures_db:
     image: postgres:17
@@ -129,13 +120,11 @@ services:
       POSTGRES_DB: postgres
     volumes:
       - pictures_pgdata:/var/lib/postgresql/data
-
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U postgres"]
       interval: 5s
       timeout: 5s
       retries: 5
-
 
 volumes:
   auth_pgdata:

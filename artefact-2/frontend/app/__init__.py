@@ -474,15 +474,23 @@ def collectives_delete(id):
     if response.ok:
       data = response.json()
       image_name = data["image_name"]
-      
-    # delete collective and image
-    response = requests.delete(f"{COLLECTIVES_API}/collectives/{id}")
-    if response.ok:
-      response = requests.delete(f"{PICTURES_API}/pictures/{image_name}")
-      if response.ok:
-        flash("Collective deleted.","success")
-      else:
-        flash("Collective was successfully deleted, but not the image.")
     else:
       flash("Sorry, we couldn't find the collective that you wanted to delete.", 'warning')
+      redirect(url_for('provider_collectives'))
+      
+    
+    # Delete image first
+    response = requests.delete(f"{PICTURES_API}/pictures/{image_name}")
+    if not response.ok:
+      flash("Failed to delete image. Please try again.", "error")
+      return redirect(url_for('provider_collectives'))
+    
+    # Then try to delete collective
+    response = requests.delete(f"{COLLECTIVES_API}/collectives/{id}")
+    if response.ok:
+        flash("Collective deleted.","success")
+    else:
+      flash("Image was successfully deleted, but not the collective.", "error")
+    
     return redirect(url_for('provider_collectives'))
+  

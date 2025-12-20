@@ -1,57 +1,144 @@
+\newpage
 \section{Transition and Reflection}
 
-\subsection{How and why the monolith were decomposed into the chosen microservices}
-\begin{comment}
-POINTER til dette afsnit:
-- Authentication / Profile service
-- Pictures service
-- HOW we implemented the microservices.
-\end{comment}
+\subsection{Decomposition strategy}
+The transition into a distributed architecture using microservices was an incremental approach
+where we tackled one problem at a time, made a change, rolled out the change, assessed it, and continued to the next problem.
+This approach follows the suggestion by PERSON in his book \_\_\_\_ where he also cites Martin Fowler:
+\emph{''If you do a big-bang rewrite, the only thing you’re guaranteed of is a big
+bang''}. SIDE 102 microservice bog.
 
-A key challenge of the transition to microservices was how to handle authentication in this new environment.
-In the monolith, we effectively used the Flask extension Flask-Login to handle authentication, and with ease map a user to its' user object in the database.
+Our choices of decomposing the monolith into microservices focused on modelling around the business domain.
+That is, creating microservices around meaningful parts of the product and different business capabilities rather than technical layers.
+This creates clear service boundaries with components conforming to well-defined interfaces and 
+aligns the architecture with the organisation, encouraging empowered teams that can focus on delivering value within their specific domain.
 
-In the new architecture, this model would no longer be possible since the data object of the user model and the authentication session token would be two separate concerns.
-A solution would be to simply make a microservice that would be responsible for both profile data and user authentication.
-That is, upon authenticating with the microservice, all user data would be sent back to the user as well as the session token.
+\subsection{Key design decisions}
 
-However, this would contradict the concept of modelling microservices around the business domain since profile information and authentication relates to two different domains of operation, one being security, another being general personal information.
+The first major design decision was figuring out how to handle user authentication and session management in a distributed system.
+Our primary goal was to ensure the frontend could be horizontally scaled with ease as we anticipated it would handle the
+most significant load. This meant making a stateless frontend.
+
+One approach was to have each frontend instance store session data in its own memory. This would require maintaining of state
+or use of sticky sessions in the load balancer, which would cause significant limitations to scalability and reduce resilience.
+% Måske kan vi bare skrive "to avoid these isues we made the frotnend sateless"
+To avoid these issues we made the frontend stateless allowing it to scale easily on demand with multiple interchangable instances.
+
+Next we considered how to handle profile data. A solution would be to store this alongside the credentials in the authentication service.
+However, this would contradict the concept of modelling microservices around the business domain and seperating concerns since profile information and 
+authentication relates to two different concepts, one being security, another being general personal information.
 This also becomes clear due to the fact that a Provider does not have the need for a personal profile, but still needs to authenticate.
+Separating handling of authentication and profile into two dedicated microservices also allows us to scale the two services independently.
 
-Separating handling of authentication and profile into two dedicated microservices aligns the architecture with the organisation and encourages delegation to specialised teams, with a security-focused team responsible for authentication and another team responsible for profile management.
-It also incites a more open system where components conforms to well-defined interfaces and are easily interoperable and extensible, as the clear separation of concerns makes our microservices easier to integrate with other systems.
+Another challenge we encountered was how to always provide information about the user's authentication to our HTML templates, as the nav bar adapts based on this.
+Since this information is always needed we didn't want to pass it every time we rendered a template and instead searched for a similar
+solution to the \texttt{current\_user} object always accessible from templates in the monolith.
+Our chosen design utilizes the decorator \texttt{@app.before\_request} to check if the user is authenticated with the Auth service on every request. 
+We use this to populate the \texttt{g.user} object with whether the user is authenticated and their role. By making this available as a variable named 
+\texttt{current\_user} through a context processor we were able to directly reuse the logic of our old templates.
+As we always call the authentication service before requests we also simplified the logic in our routes and \texttt{@login\_required} and \texttt{@role\_required} decorators.
+One downside to the chosen approach is that this function is called on every single request which includes static requests. However, by instantly returning from the function in case of static requests this overhead becomes negligible. In the future the design might cause unnecessary overhead if our frontend will consist of multiple routes that don't end up rendering the nav bar.
 
-The separation also allows for a more scalable application in terms of size due to the fact that the two microservices can be scaled independently of one another.
-
-Another issue to be approached was the handling of images, which can be broken into two subproblems:
+An additional issue to address was handling images, which can be broken into two subproblems:
 \begin{itemize}
     \item Uploading and storing images
     \item Downloading images
 \end{itemize}
-For the first problem of storing images, an approach would be to have a dedicated database for images that each of the microservices interacted with, as seen on figure \_. 
+For the first problem of storing images, an approach would be to have a dedicated database for images that each of the microservices interacted with, 
+as seen on figure \_. 
 
 This would lead to a coupled architecture where two microservices make use of a common set of data, also called common coupling.
-We lowered the coupling by introducing the minimal wrapper service Pictures that both the Collectives microservice and the Profile microservice interacts with.
+We reduced the coupling by introducing the minimal wrapper service Pictures that both the Collectives microservice and the Profile microservice interacts with.
 
-Although this decouples the system in a greater fashion, there would still occur the type of coupling called pass-through coupling due to the fact that images would have to be passed from the frontend to these microservices only because another downstream service needs it, as seen on figure ...
+Although this decouples the system, there would still occur the type of coupling called pass-through coupling 
+due to the fact that images would have to be passed from the frontend to these microservices only because another downstream service needs it, as seen on figure ...
 
-One way to erase this coupling is to let the frontend communicate directly with the pictures API, leading to a more loosely architecture as seen on figure ...
+One way to eliminate this coupling is to let the frontend communicate directly with the pictures API, leading to a more loosely coupled architecture as seen on figure ...
 
 Having tackled the coupling issue of storing images, we move on to the next problem of how the user should download images.
-Should the user request images from the frontend which in turn requests the images from the pictures microservice, having the frontend function as a proxy server for the pictures microservice as seen on figure ...?
+Should the user request images from the frontend which in turn requests the images from the pictures microservice, 
+having the frontend function as a proxy server for the pictures microservice as seen on figure ...?
 This would again lead to pass-through coupling, and passing blob data between several services would exhaust resources.
 
-In order to counter this pass-through coupling, we exposed/publicated the pictures microservice directly to the user as seen on figure...
-Publicating the pictures microservice would of course not be a sustainable solution if the pictures were categorized as private data, and in that case we would have to go with the original solution.
+To counter this pass-through coupling, we exposed/publicated the pictures microservice directly to the user as seen on figure...
+Publicating the pictures microservice would of course not be a sustainable solution if the pictures were categorized as private data, 
+and in that case we would have to go with the original solution.
 
-These considerations led us to the chosen autonomous microservices, promoting openness, scalability and a high degree of distribution transparency by making the microservices work together without users or applications having to know all the details.
-The only form of coupling present is domain coupling which is a loose form of coupling in our case. This results in a high centralisation of logic within the frontend microservice,
+
+\subsection{Lazy vs. eager profile creation}
+%TODO: det er faktisk et lidt dårligt Saga eksempel. Men sætter os lidt op til at tale om Application til eksamen og hvordan den er et bedre Saga eksempel.
+Our system implements lazy profile creation, meaning profiles are
+created on-demand when seekers first visit their profile page through
+a PUT request which creates or replaces the profile.
+This design choice prioritizes simplicity over immediate consistency
+as seekers exist without profiles until they choose to create one.
+
+We also considered eager profile creation, where a seeker's profile would be
+created during registration. This adds a level of consistency but requires distributed transaction to maintain consistency between the separate Auth and Profile databases.
+
+% Gamle version med flere detajler -> skåret fra for plads.
+\begin{comment}
+This adds a level of consistency but introduces
+transaction management challenges.
+In our monolith it would be straightforward as we access a single shared database.
+But for the microservice system we would need a distributed transaction to
+maintain consistency between the separate Auth and Profile databases.
+\end{comment}
+
+One way to achieve this is through the use of a two-phase commit (2PC)
+to ensure that both services commit or abort the transaction.
+This would prioritize consistency as all nodes commit or abort together,
+but sacrifices availability since participants must all be available and 
+wait until a decision is made.
+
+Another approach is to use the Saga pattern.
+That is, instead of using a distributed transaction, we maintain data consistency
+through a sequence of local transactions.
+This could be implemented with a centralized Saga orchestrator.
+Firstly a user in the Auth service would be created. On success, the profile in the Profiles service is created. If this fails, we would either compensate 
+by deleting the user from Auth or repeat the request if we see user creation as the pivot.
+
+In our case lazy profile creation is the right choice as for profile creation the added complexity is not warranted. 
+
+
+
+\subsection{Future improvement}
+One area that can be improved upon is our handling of data consistency
+when deleting collectives from the system.
+This operation requires coordinating two services (Collectives and Pictures)
+to delete related data, which illustrates the challenge of maintaining consistency
+across microservices.
+
+Our current implementation uses a simple sequential approach:
+\begin{enumerate}
+    \item Delete image from Pictures service
+    \item Delete collective from Collectives service
+\end{enumerate}
+
+We only go to step 2 if step 1 succeeds, however, we do not
+ensure the success of step 2.
+Because of this, we deliberately chose to delete images first to prevent orphaned images
+in our system.
+With this ordering if we fail in step two, the user can at least try to delete the collective again.
+However, the data in our system can be left in an inconsistent state which is not optimal.
+% Man kunne også bare nævne at en løsning ville være at anvende en Saga appraoch her og så 
+% eventuelt slette hele "Profile creation" afsnittet.
+Furthermore, our current approach exhibits high temporal coupling as both services must be available simultaneously for the operation to succeed.
+
+One way to improve both the resilience and reduce the coupling would be to use an event-based approach.
+Here we could publish an event from the collectives service on deletion and have the Pictures service subscribe to the event. 
+This approach keeps the services referentially decoupled. If we allow the Pictures service to receive notifications form the past they will also be temporally decoupled, 
+as the Pictures service can cleanup later, even if it is temporarily unavailable at the time of deletion.
+It does, however, introduce some complexity but ensures eventual consistency and reduces coupling which is a worthwhile trade-off.
+
+
+
+\subsection{Conclusion}
+All of these design decisions led us to the chosen autonomous microservices. The design promotes openness, scalability and a high degree of distribution transparency 
+by making the microservices work together without users or applications having to know all the details.
+We strived to only have domain coupling which is a loose form of coupling in our system. 
+This results in a high centralisation of logic within the frontend microservice,
 having to interact with several downstream microservices, and the frontend service would have to be replicated and scaled accordingly.
-
-The work process aligned with our thought process to a great extent. We tackled one problem at a time, the first being the issue of authentication. We worked by implementing an incremental approach where we made a change, rolled the change out, assessed it, and continued to the next problem.
-PERSON suggests this approach in his book \_\_\_\_ and cites Martin Fowler: "If you do a big-bang rewrite, the only thing you’re guaranteed of is a big
-bang". SIDE 102 microservice bog.
-
-\input{authentication_reflections.tex}
-
-\input{database_reflection.tex}
+The next steps of our product development would be the implementation of applications, and in turn
+the payment processing. Here we presume stricter consistency requirements will be encountered where the Saga pattern would be justified. 
+An early improvement to our architecture by the introduction of an event bus might also support this further development.

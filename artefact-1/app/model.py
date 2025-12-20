@@ -1,4 +1,3 @@
-from flask.cli import with_appcontext
 from flask_login import UserMixin
 from . import db, bcrypt
 from .images import delete_picture

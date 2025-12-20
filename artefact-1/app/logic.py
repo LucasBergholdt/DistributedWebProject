@@ -1,3 +1,4 @@
+import random
 from flask import Blueprint, flash, redirect, request, render_template, url_for
 from flask_login import current_user, login_required
 from . import db
@@ -12,6 +13,23 @@ bp = Blueprint('logic', __name__)
 
 
 # ------------------ ROUTES FOR ALL USERS --------------- #
+
+@bp.route("/", methods=['GET'])
+def landing():
+  """
+  Landing page for all visitors. 
+  Shows selected collectives as advertisement. 
+  
+  Returns:
+    str: The landing page
+  """
+  # Selects 3 random collectives from the database, or fewer if there are less than 3 available.
+  # Future iterations could make this based on more dynamic criteria, e.g sponsored adds or a recommender system.
+  all_entries = Collective.get_all()
+  selected_entries = random.sample(all_entries, min(3, len(all_entries)))
+  
+  return render_template("landingpage.html", selected_entries=selected_entries)
+
 
 @bp.route("/collectives", methods=["GET"])
 def collectives_index():

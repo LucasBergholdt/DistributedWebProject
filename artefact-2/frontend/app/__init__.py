@@ -1,6 +1,7 @@
 from datetime import date
 from functools import wraps
 import os
+import random
 import requests
 from wtforms import DateField, FloatField, Form, IntegerField, RadioField, SelectField, StringField, SubmitField, EmailField, PasswordField, BooleanField, TextAreaField
 from wtforms.validators import DataRequired, Email, EqualTo, Optional, Length
@@ -101,7 +102,6 @@ def load_auth_context():
 
 @app.context_processor
 def inject_user():
-  #TODO: Test om dette crasher ved static calls
   return dict(current_user=g.user)
 
 
@@ -144,7 +144,9 @@ def landing():
   """
   response = requests.get(f"{COLLECTIVES_API}/collectives")
   if response.ok:
-    selected_entries = response.json()[0:3]
+    # Select 3 random collectives from the database, or fewer if there are less than 3 available.
+    entries = response.json()
+    selected_entries = random.sample(entries, min(3, len(entries)))
   else:
     selected_entries = {}
   return render_template("landingpage.html", selected_entries=selected_entries, pictures_url = PICTURES_URL_FROM_HOST)

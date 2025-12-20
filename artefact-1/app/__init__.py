@@ -63,10 +63,10 @@ def create_app(test_config=None):
 
     # Registering the blueprints to the app
     app.register_blueprint(auth.bp)
-    app.add_url_rule('/', endpoint='landing') # landing page is default route
 
     from . import logic
     app.register_blueprint(logic.bp)
+    app.add_url_rule('/', endpoint='landing') # landing page is default route
 
     from . import images
     app.register_blueprint(images.bp)

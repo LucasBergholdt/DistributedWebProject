@@ -1,7 +1,7 @@
 from flask import Blueprint, current_app, session, redirect, render_template, request, url_for, flash
 from flask_login import current_user, login_required, login_user, logout_user
 from flask_principal import Permission, RoleNeed, UserNeed, Identity, AnonymousIdentity, identity_changed
-from .model import Collective, User
+from .model import User
 from .forms import LoginForm, RegistrationForm
 
 bp = Blueprint('auth', __name__)
@@ -33,21 +33,6 @@ def on_identity_loaded(sender, identity):
 
 #-------------------------- ROUTES -----------------------------------------------------------------------
 
-# TODO: I princippet ville jeg gerne have den her i logic.py, men gjorde overgangen fra én fil lidt svær. 
-@bp.route("/", methods=['GET'])
-def landing():
-  """
-  Landing page for all visitors. 
-  Shows selected collectives as advertisement. 
-  
-  Returns:
-    str: The landing page
-  """
-  # Future iterations could make this based on more dynamic criteria, e.g sponsored adds or a recommender system.
-  selected_entries = Collective.get_all()[0:3]
-  return render_template("landingpage.html", selected_entries=selected_entries)
-
-
 @bp.route("/login", methods=('GET','POST'))
 def login():
   """
@@ -62,7 +47,7 @@ def login():
   """
   if current_user.is_authenticated:
     flash('You are already logged in.', 'info')
-    return redirect(url_for("landing"))
+    return redirect(url_for("logic.landing"))
   else:
       form = LoginForm(request.form)
       if request.method == 'POST' and form.validate():
@@ -75,7 +60,7 @@ def login():
               identity_changed.send(current_app._get_current_object(), identity=Identity(user.id))
 
               # Redirect to landing
-              return redirect(url_for("landing"))
+              return redirect(url_for("logic.landing"))
           else:
               # Otherwise, display an error message and display the login form again
               flash("Invalid credentials", "error")
@@ -95,7 +80,7 @@ def register():
   """
   if current_user.is_authenticated:
     flash('You are already logged in.', 'info')
-    return redirect(url_for("landing"))
+    return redirect(url_for("logic.landing"))
   else:
     form = RegistrationForm(request.form)
 
@@ -108,7 +93,7 @@ def register():
       
       login_user(user)
       flash("User created.", "success")
-      return redirect(url_for('landing'))
+      return redirect(url_for('logic.landing'))
     
     return render_template('auth/register.html', form=form)
 
@@ -130,4 +115,4 @@ def logout():
   identity_changed.send(current_app._get_current_object(),
                         identity=AnonymousIdentity())
   
-  return redirect(url_for('landing'))
+  return redirect(url_for('logic.landing'))

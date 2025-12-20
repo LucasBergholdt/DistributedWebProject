@@ -4,17 +4,17 @@
 % overvej at beskrive blueprint? nok ikke nødvendigt?
 
 The section will provide a high-level overview of our codebase for the monolithic implementation, and try to map the concrete components to the functionality of our service. 
-It also serves to introduce and document the degree of cohesion and coupling throughout the monolithic system.
+It also serves to introduce and document the degree of cohesion and coupling between the componenets. The section is accompagnied by two diagrams, that we will refer to when relevant (Figure \ref{fig:container_monolith}, Figure \ref{fig:zoom_in_monolith}).
 
 \subsection{Overview}
 
-Our monolith follows a 1-tier layered approach, a modular monolith, deployed as a single unit thorugh the \verb|__init__| initialization of the Flask Blueprint framework. The unit is deployed via a a single Docker container, and can be ran following the instructions in the \verb|README.md| file. 
-A monolith is a sensible starting point for a software project of our scope, and the main advantage is that we are avoiding the unnecessary complexity of distributed parts. For example that the communication of each layer can be done in a single process, simplifying our development flow and iteration cycles. 
+Our monolith follows a 1-tier layered approach, a modular monolith, deployed as a single unit thruogh the \verb|__init__| initialization of the Flask Blueprint framework. The unit is deployed via a a single Docker container, and can be ran following the instructions in the \verb|README.md| file. 
+A monolith is a sensible starting point for a software project of our scope, and the main advantage is that we are avoiding the unnecessary complexity of distributed parts. The communication of each layer can be done in a single process, simplifying our development flow and iteration cycles. 
 We decided to value a fast and easy deployment over a, on paper, more fault tolerant and scalable tiered approach. Each module can communicate directly with one another through direct imports. Representing the organisation of the code in multiple modules is also a good starting point for the later microservice evolution. 
 
 The monolith is logically organized in layers; each layer with its own responsibility. This means, that we utilize a one-way communication from the Presentation Layer, to the Business Logic Layer and the Database Layer.
 Importantly, we can partition each layer of our system into three subcategories based on their relation to the problem domain of Seekers, Providers or Anonymous users (Figure \ref{fig:container_monolith}). 
-Each subcategory within a layer is responsible for the domain driven functionality of that particular layer. This means, that even though we have grouped our system in horizontal layers, each subcategory of an upper layer is dependent on the components of the same subcategory of the layer below. Making any changes to the system therefore requires attention and often manipulation of all three layers, as the problem domain, represented by a subcategory of components, has to be present in all layers. 
+Each subcategory within a layer is responsible for the domain driven functionality of that particular layer. This means, that even though we have grouped our system in horizontal layers, each subcategory of an upper layer is dependent on the components of the same subcategory of the layer below. Making any changes to the system therefore requires attention and often manipulation of all three layers, as some aspect of the problem domain, represented by a subcategory of components, has to be present in all layers. 
 
 \subsection{Layers, Components and Dependencies}
 
@@ -36,9 +36,9 @@ The possibility of delegating the actual implementation of the authorization to 
 All modules and subcategories in the business layer is dependent on the \verb|forms.py| in order achieve their respective interaction with the user, however, each form is independent from eachother, so we could also have stored the relevant form inside of the relevant logic. It therefore maintains a pure data coupling.
 
 The Database layer consists of the storage of domain entities in \verb|model.py|, which are the \verb|Collective|, \verb|User|, and the \verb|SeekerProfile| classes. 
-Many methods in the Business Layer directly manipulates the data, such as \verb|create_or_update_profile()|.
+Many methods in the Business Layer directly manipulates the data, such as \verb|create_or_update_profile()| in the Seeker Logic.
 The Business Layer is therefore externally coupled with the Database Layer, as manipulation is an Object-Relational Mapping achieved via SQLAlchemy that directly affects the persistant stored data, with the methods using the entire composite data structures.
-\verb|images.py| has the responsibility of providng image handling capabilities, and can coupling wise be considered as part of the \verb|model.py|.
+\verb|images.py| has the responsibility of providng image handling capabilities, and can coupling wise be considered as part of the \verb|model.py| Database layer.
 
 Overall, the monolith version represents an easy to build ... \textbf{UDDYB}.
 However, the disadvantages of the monolithic layered approach comes from the higher degree of coupling between select parts of the system. While the Presentation layer only is coupled through data links, the internal coupling between components of the Business Layer, and the coupling of the Business Layer with the Database Layer remains somewhat high 

@@ -1,6 +1,7 @@
 version: "3.9"
 
 services:
+
   frontend:
     build: ./frontend
     ports:
@@ -31,6 +32,7 @@ services:
     depends_on:
       auth_db:
         condition: service_healthy                  # service's "healthiness" is assessed by the field "healthcheck"
+
   auth_db:
     image: postgres:17
     environment:

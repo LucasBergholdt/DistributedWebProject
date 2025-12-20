@@ -1,31 +1,57 @@
 \section{Transition and Reflection}
 
-Måske komme ind på valget omkring seeker/provider vs generic user.
+\subsection{How and why the monolith were decomposed into the chosen microservices}
+\begin{comment}
+POINTER til dette afsnit:
+- Authentication / Profile service
+- Pictures service
+- HOW we implemented the microservices.
+\end{comment}
+
+A key challenge of the transition to microservices was how to handle authentication in this new environment.
+In the monolith, we effectively used the Flask extension Flask-Login to handle authentication, and with ease map a user to its' user object in the database.
+
+In the new architecture, this model would no longer be possible since the data object of the user model and the authentication session token would be two separate concerns.
+A solution would be to simply make a microservice that would be responsible for both profile data and user authentication.
+That is, upon authenticating with the microservice, all user data would be sent back to the user as well as the session token.
+
+However, this would contradict the concept of modelling microservices around the business domain since profile information and authentication relates to two different domains of operation, one being security, another being general personal information.
+This also becomes clear due to the fact that a Provider does not have the need for a personal profile, but still needs to authenticate.
+
+Separating handling of authentication and profile into two dedicated microservices aligns the architecture with the organisation and encourages delegation to specialised teams, with a security-focused team responsible for authentication and another team responsible for profile management.
+It also incites a more open system where components conforms to well-defined interfaces and are easily interoperable and extensible, as the clear separation of concerns makes our microservices easier to integrate with other systems.
+
+The separation also allows for a more scalable application in terms of size due to the fact that the two microservices can be scaled independently of one another.
+
+Another issue to be approached was the handling of images, which can be broken into two subproblems:
+\begin{itemize}
+    \item Uploading and storing images
+    \item Downloading images
+\end{itemize}
+For the first problem of storing images, an approach would be to have a dedicated database for images that each of the microservices interacted with, as seen on figure \_. 
+
+This would lead to a coupled architecture where two microservices make use of a common set of data, also called common coupling.
+We lowered the coupling by introducing the minimal wrapper service Pictures that both the Collectives microservice and the Profile microservice interacts with.
+
+Although this decouples the system in a greater fashion, there would still occur the type of coupling called pass-through coupling due to the fact that images would have to be passed from the frontend to these microservices only because another downstream service needs it, as seen on figure ...
+
+One way to erase this coupling is to let the frontend communicate directly with the pictures API, leading to a more loosely architecture as seen on figure ...
+
+Having tackled the coupling issue of storing images, we move on to the next problem of how the user should download images.
+Should the user request images from the frontend which in turn requests the images from the pictures microservice, having the frontend function as a proxy server for the pictures microservice as seen on figure ...?
+This would again lead to pass-through coupling, and passing blob data between several services would exhaust resources.
+
+In order to counter this pass-through coupling, we exposed/publicated the pictures microservice directly to the user as seen on figure...
+Publicating the pictures microservice would of course not be a sustainable solution if the pictures were categorized as private data, and in that case we would have to go with the original solution.
+
+These considerations led us to the chosen autonomous microservices, promoting openness, scalability and a high degree of distribution transparency by making the microservices work together without users or applications having to know all the details.
+The only form of coupling present is domain coupling which is a loose form of coupling in our case. This results in a high centralisation of logic within the frontend microservice,
+having to interact with several downstream microservices, and the frontend service would have to be replicated and scaled accordingly.
+
+The work process aligned with our thought process to a great extent. We tackled one problem at a time, the first being the issue of authentication. We worked by implementing an incremental approach where we made a change, rolled the change out, assessed it, and continued to the next problem.
+PERSON suggests this approach in his book \_\_\_\_ and cites Martin Fowler: "If you do a big-bang rewrite, the only thing you’re guaranteed of is a big
+bang". SIDE 102 microservice bog.
 
 \input{authentication_reflections.tex}
 
 \input{database_reflection.tex}
-
-
-
-\begin{comment}
-Noter:
-Picture service
-- Forklar de forskellige options vi undersøgte
-- Hvordan disse skabte common coupling / pass through coupling
-- Hvordan den nuværende løsning undgår dette
-- Ulemper ved løsningen
-
-Auth og Profile service:
-- hvorfor vi splittede de to services
-- security concepts vs. application data
-- kan scale dem forskelligt
-
-Lazy profile creation:
-- Vi valgte den simplere lazy creation
-- Man kunne have valgt eager creation med brug af Saga pattern
-- Trade-offs (ekstra logik i forhold til profiler der ikke eksisterer)
-
-Temporal and referential coupling bliver måske relevant med application service.
-Vi har sigtet efter kun at have domain coupling
-\end{comment}

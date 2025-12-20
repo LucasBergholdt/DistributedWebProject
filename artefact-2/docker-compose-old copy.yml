@@ -18,32 +18,31 @@ services:
       - auth
       - collectives
       - profile
-      - pictures
   auth:
     build: ./auth
     expose:
       - "5000" # tilgå logic på 5001 porten
     environment:
-      - DATABASE_URL=postgresql://postgres:postgres@auth_db:5432/postgres
+      - DATABASE_URL=postgresql://postgres:postgres@db:5432/postgres
     #TODO: FOR DEBUGGING
     volumes:                    # debug
       - ./auth:/app             # debug
     command: flask run --debug  # debug
     depends_on:
-      - auth_db
+      - db
   
   collectives:
     build: ./collectives
     expose:
       - "5000"  # Expose collectives service
     environment:
-      - DATABASE_URL=postgresql://postgres:postgres@collectives_db:5432/postgres
+      - DATABASE_URL=postgresql://postgres:postgres@db:5432/postgres
     #TODO: FOR DEBUGGING
     volumes:                    # debug
       - ./collectives/:/app     # debug
     command: flask run --debug  # debug
     depends_on:
-      - collectives_db
+      - db
       - pictures
 
   profile:
@@ -51,13 +50,13 @@ services:
     expose:
       - "5000"  # Expose profile service
     environment:
-      - DATABASE_URL=postgresql://postgres:postgres@profile_db:5432/postgres
+      - DATABASE_URL=postgresql://postgres:postgres@db:5432/postgres
     #TODO: FOR DEBUGGING
     volumes:                    # debug
       - ./profile/:/app     # debug
     command: flask run --debug  # debug
     depends_on:
-      - profile_db
+      - db
       - pictures
 
   pictures:
@@ -65,79 +64,29 @@ services:
     ports:
       - "5004:5000"  # Expose pictures service
     environment:
-      - DATABASE_URL=postgresql://postgres:postgres@pictures_db:5432/postgres
+      - DATABASE_URL=postgresql://postgres:postgres@db:5432/postgres
     #TODO: FOR DEBUGGING
     volumes:                    # debug
       - ./pictures/:/app     # debug
     command: flask run --debug  # debug
     depends_on:
-      - pictures_db
+      - db
 
-
-  auth_db:
+  db:
     image: postgres:17
     environment:
       POSTGRES_USER: postgres
       POSTGRES_PASSWORD: postgres
       POSTGRES_DB: postgres
     volumes:
-      - auth_pgdata:/var/lib/postgresql/data
+      - pgdata:/var/lib/postgresql/data
 
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U postgres"]
       interval: 5s
       timeout: 5s
       retries: 5
-
-  collectives_db:
-    image: postgres:17
-    environment:
-      POSTGRES_USER: postgres
-      POSTGRES_PASSWORD: postgres
-      POSTGRES_DB: postgres
-    volumes:
-      - collectives_pgdata:/var/lib/postgresql/data
-
-    healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U postgres"]
-      interval: 5s
-      timeout: 5s
-      retries: 5
-
-  profile_db:
-    image: postgres:17
-    environment:
-      POSTGRES_USER: postgres
-      POSTGRES_PASSWORD: postgres
-      POSTGRES_DB: postgres
-    volumes:
-      - profile_pgdata:/var/lib/postgresql/data
-
-    healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U postgres"]
-      interval: 5s
-      timeout: 5s
-      retries: 5
-
-  pictures_db:
-    image: postgres:17
-    environment:
-      POSTGRES_USER: postgres
-      POSTGRES_PASSWORD: postgres
-      POSTGRES_DB: postgres
-    volumes:
-      - pictures_pgdata:/var/lib/postgresql/data
-
-    healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U postgres"]
-      interval: 5s
-      timeout: 5s
-      retries: 5
-
 
 volumes:
-  auth_pgdata:
-  collectives_pgdata:
-  profile_pgdata:
-  pictures_pgdata:
-
+  pgdata:
+    driver: local

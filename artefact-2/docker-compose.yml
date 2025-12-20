@@ -6,7 +6,7 @@ services:
     ports:
       - "5000:5000" 
     environment: 
-      - AUTH_API_URL=http://auth:5000 # Container to container communication
+      - AUTH_API_URL=http://auth:5000
       - COLLECTIVES_API_URL=http://collectives:5000
       - PROFILE_API_URL=http://profile:5000
       - PICTURES_API_URL=http://pictures:5000

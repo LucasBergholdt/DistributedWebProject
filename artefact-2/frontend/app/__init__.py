@@ -2,7 +2,7 @@ from datetime import date
 from functools import wraps
 import os
 import requests
-from wtforms import DateField, DecimalField, Form, IntegerField, RadioField, SelectField, StringField, SubmitField, EmailField, PasswordField, BooleanField, TextAreaField
+from wtforms import DateField, FloatField, Form, IntegerField, RadioField, SelectField, StringField, SubmitField, EmailField, PasswordField, BooleanField, TextAreaField
 from wtforms.validators import DataRequired, Email, EqualTo, Optional, Length
 from flask import Flask, g, redirect, render_template, request, session, url_for, flash
 from flask_wtf import FlaskForm
@@ -61,7 +61,7 @@ class CollectiveForm(FlaskForm):
   city = StringField('Name of city', validators=[DataRequired(), Length(min=1, max=80, message='You cannot have less than 1 or more than 80 characters')])
   street = StringField('Name of street', validators=[DataRequired(), Length(min=1, max=80, message='You cannot have less than 1 or more than 80 characters')])
   roomsize = IntegerField('Size of the room available (square meters)', validators=[DataRequired()])
-  price = DecimalField('Price in DKK', validators=[DataRequired()])
+  price = FloatField('Price in DKK', validators=[DataRequired()])
   description = TextAreaField('Describe your collective', validators=[DataRequired(), Length(min=1, max=300, message='You cannot have less than 1 or more than 300 characters')])
   image = FileField(validators=[Optional()])
   submit = SubmitField('Register your collective')

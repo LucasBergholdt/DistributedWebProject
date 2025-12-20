@@ -26,7 +26,7 @@ To avoid these issues we made the frontend stateless allowing it to scale easily
 
 Next we considered how to handle profile data. A solution would be to store this alongside the credentials in the authentication service.
 However, this would contradict the concept of modelling microservices around the business domain and seperating concerns since profile information and 
-authentication relates to two different concepts, one being security, another being general personal information.
+authentication relates to two different concepts. One being security, another being general personal information.
 This also becomes clear due to the fact that a Provider does not have the need for a personal profile, but still needs to authenticate.
 Separating handling of authentication and profile into two dedicated microservices also allows us to scale the two services independently.
 
@@ -37,7 +37,9 @@ Our chosen design utilizes the decorator \texttt{@app.before\_request} to check 
 We use this to populate the \texttt{g.user} object with whether the user is authenticated and their role. By making this available as a variable named 
 \texttt{current\_user} through a context processor we were able to directly reuse the logic of our old templates.
 As we always call the authentication service before requests we also simplified the logic in our routes and \texttt{@login\_required} and \texttt{@role\_required} decorators.
-One downside to the chosen approach is that this function is called on every single request which includes static requests. However, by instantly returning from the function in case of static requests this overhead becomes negligible. In the future the design might cause unnecessary overhead if our frontend will consist of multiple routes that don't end up rendering the nav bar.
+One downside to the chosen approach is that this function is called on every single request which includes static requests. 
+However, by instantly returning from the function in case of static requests this overhead becomes negligible. 
+In the future the design might cause unnecessary overhead if our frontend implements multiple routes that don't render the nav bar.
 
 An additional issue to address was handling images, which can be broken into two subproblems:
 \begin{itemize}
@@ -60,7 +62,7 @@ Should the user request images from the frontend which in turn requests the imag
 having the frontend function as a proxy server for the pictures microservice as seen on figure ...?
 This would again lead to pass-through coupling, and passing blob data between several services would exhaust resources.
 
-To counter this pass-through coupling, we exposed/publicated the pictures microservice directly to the user as seen on figure...
+To avoid this problem, we exposed/publicated the pictures microservice directly to the user as seen on figure...
 Publicating the pictures microservice would of course not be a sustainable solution if the pictures were categorized as private data, 
 and in that case we would have to go with the original solution.
 
@@ -86,7 +88,7 @@ maintain consistency between the separate Auth and Profile databases.
 \end{comment}
 
 One way to achieve this is through the use of a two-phase commit (2PC)
-to ensure that both services commit or abort the transaction.
+to ensure that both services either commit or abort the transaction.
 This would prioritize consistency as all nodes commit or abort together,
 but sacrifices availability since participants must all be available and 
 wait until a decision is made.
@@ -111,8 +113,8 @@ across microservices.
 
 Our current implementation uses a simple sequential approach:
 \begin{enumerate}
-    \item Delete image from Pictures service
-    \item Delete collective from Collectives service
+    \item Delete the image from Pictures service
+    \item Delete the collective from Collectives service
 \end{enumerate}
 
 We only go to step 2 if step 1 succeeds, however, we do not
@@ -137,8 +139,8 @@ It does, however, introduce some complexity but ensures eventual consistency and
 All of these design decisions led us to the chosen autonomous microservices. The design promotes openness, scalability and a high degree of distribution transparency 
 by making the microservices work together without users or applications having to know all the details.
 We strived to only have domain coupling which is a loose form of coupling in our system. 
-This results in a high centralisation of logic within the frontend microservice,
-having to interact with several downstream microservices, and the frontend service would have to be replicated and scaled accordingly.
+The frontend microservice has high centralisation of logic
+having to interact with several downstream microservices, and as such it would have to be replicated and scaled accordingly.
 The next steps of our product development would be the implementation of applications, and in turn
 the payment processing. Here we presume stricter consistency requirements will be encountered where the Saga pattern would be justified. 
 An early improvement to our architecture by the introduction of an event bus might also support this further development.

@@ -233,7 +233,7 @@ def register():
   return render_template('auth/register.html', form=form)
 
 
-@app.route('/logout', methods=['GET', 'POST'])
+@app.route('/logout', methods=['GET'])
 @login_required
 def logout():
   """
@@ -252,7 +252,7 @@ def logout():
       return redirect(url_for("landing"))
     
   flash("Logout failed", "error")
-  return redirect(url_for("landing")) #TODO: Skal vi redirecte til home??
+  return redirect(url_for("landing"))
 
 
 

@@ -30,7 +30,8 @@ services:
       - ./auth:/app             # debug
     command: flask run --debug  # debug
     depends_on:
-      - auth_db
+      auth_db:
+        condition: service_healthy
   
   collectives:
     build: ./collectives
@@ -43,8 +44,8 @@ services:
       - ./collectives/:/app     # debug
     command: flask run --debug  # debug
     depends_on:
-      - collectives_db
-      - pictures
+      collectives_db:
+        condition: service_healthy
 
   profile:
     build: ./profile
@@ -57,8 +58,8 @@ services:
       - ./profile/:/app     # debug
     command: flask run --debug  # debug
     depends_on:
-      - profile_db
-      - pictures
+      profile_db:
+        condition: service_healthy
 
   pictures:
     build: ./pictures
@@ -71,7 +72,8 @@ services:
       - ./pictures/:/app     # debug
     command: flask run --debug  # debug
     depends_on:
-      - pictures_db
+      pictures_db:
+        condition: service_healthy
 
 
   auth_db:

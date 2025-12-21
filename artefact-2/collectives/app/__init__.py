@@ -165,9 +165,9 @@ Vestibulum vestibulum neque eu lobortis malesuada. Pellentesque euismod erat mau
 
 # For populating the site with some default data for show:
 def create_default_collectives():
-  Collective.create_collective(2, "Odense C", "Vindegade", 50, 2569, descr,"1.jpg") #submitterID = 2. provider@gmail.com.
+  Collective.create_collective(2, "Aarhus C", "Vindegade", 50, 2569, descr,"1.jpg") #submitterID = 2. provider@gmail.com.
   Collective.create_collective(2, "Odense M", "Bogense", 23, 5000, descr, "2.jpg") #submitterID = 2. provider@gmail.com.
-  Collective.create_collective(2, "Odense M", "Stige", 35, 4000, descr, "3.jpg") #submitterID = 2. provider@gmail.com.
+  Collective.create_collective(2, "Svendborg", "Strandvej", 35, 4000, descr, "3.jpg") #submitterID = 2. provider@gmail.com.
 
 # Only creates the default collectives if db is empty
 def seed_if_empty():

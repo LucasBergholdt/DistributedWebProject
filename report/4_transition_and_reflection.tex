@@ -4,9 +4,9 @@
 \subsection{Decomposition strategy}
 The transition into a distributed architecture using microservices was an incremental approach
 where we tackled one problem at a time, made a change, rolled out the change, assessed it, and continued to the next problem.
-This approach follows the suggestion by PERSON in his book \_\_\_\_ where he also cites Martin Fowler:
+This approach follows the suggestion by Sam Newman in his book "Building Microservices" where he also cites Martin Fowler: \\
 \emph{''If you do a big-bang rewrite, the only thing you’re guaranteed of is a big
-bang''}. SIDE 102 microservice bog.
+bang''} \cite[102]{microservicebook}
 
 Our choices of decomposing the monolith into microservices focused on modelling around the business domain.
 That is, creating microservices around meaningful parts of the product and different business capabilities rather than technical layers.
@@ -26,7 +26,7 @@ or use of sticky sessions in the load balancer, which would cause significant li
 To avoid these issues we made the frontend stateless, by being stored in the browser cookie, allowing it to scale easily on demand with multiple interchangable instances.
 
 Next we considered how to handle profile data. A solution would be to store this alongside the credentials in the authentication service.
-However, this would contradict the concept of modelling microservices around the business domain and seperating concerns since profile information and 
+However, this would contradict the concept of modelling microservices around the business domain and separating concerns since profile information and 
 authentication relates to two different concepts. One being security, another being general personal information.
 This also becomes clear due to the fact that a Provider does not have the need for a personal profile, but still needs to authenticate.
 Separating handling of authentication and profile into two dedicated microservices also allows us to scale the two services independently.
@@ -49,26 +49,72 @@ An additional issue to address was handling images, which can be broken into two
     \item Uploading and storing images
     \item Downloading images
 \end{itemize}
+
 For the first problem of storing images, an approach would be to have a dedicated database for images that each of the microservices interacted with, 
-as seen on figure \_. 
-
+as seen on figure \ref{fig:1_common_coupling}.
 This would lead to a coupled architecture where two microservices make use of a common set of data, also called common coupling.
-We reduced the coupling by introducing the minimal wrapper service Pictures that both the Collectives microservice and the Profile microservice interacts with.
+We reduced the coupling by introducing the minimal wrapper service Pictures that both the Collectives microservice and the Profile microservice interacts with, as seen on figure \ref{fig:2_common_coupling}
+\begin{figure}[h]
+    \begin{subfigure}{0.5\textwidth}
+        \centering
+        \includegraphics[scale=0.4]{img/1_common_coupling.png}
+        \caption{Commonly coupled database}
+        \label{fig:1_common_coupling}
+    \end{subfigure}
+    \begin{subfigure}{0.5\textwidth}
+        \centering
+        \includegraphics[scale=0.4]{img/2_common_coupling.png}
+        \caption{Wrapper service to erase common coupling}
+        \label{fig:2_common_coupling}
+    \end{subfigure}
+\caption{Common coupling}
+\label{fig:3}
+\end{figure}
+\begin{comment}
+C-E: korresponderende WRAP latex kode. Dette var der ikke plads til
 
-Although this decouples the system, there would still occur the type of coupling called pass-through coupling 
-due to the fact that images would have to be passed from the frontend to these microservices only because another downstream service needs it, as seen on figure ...
+\begin{wrapfigure}{r}{0.25\textwidth}
+\includegraphics[scale=0.3]{img/2_common_coupling.png}
+\caption{Common coupled ...}
+\label{2_common_coupling}
+\end{wrapfigure}
+\begin{wrapfigure}{r}{0.25\textwidth}
+\includegraphics[scale=0.3]{img/2b_common_coupling.png}
+\caption{Common coupled ...}
+\label{2b_common_coupling}
+\end{wrapfigure}
+\end{comment}
 
-One way to eliminate this coupling is to let the frontend communicate directly with the pictures API, leading to a more loosely coupled architecture as seen on figure ...
+Although this counters the problem of common coupling within the system, there would still occur the type of coupling called pass-through coupling 
+due to the fact that images would have to be passed from the frontend to these microservices only because another downstream service needs it.
+One way to eliminate this coupling is to let the frontend communicate directly with the pictures API, leading to a more loosely coupled architecture as seen on figure \ref{fig:2b_common_coupling}
+\begin{figure}[H]
+    \centering
+    \includegraphics[scale=0.4]{img/2b_common_coupling.png}
+    \caption{New architecture with no pass-through coupling}
+    \label{fig:2b_common_coupling}
+\end{figure}
 
 Having tackled the coupling issue of storing images, we move on to the next problem of how the user should download images.
 Should the user request images from the frontend which in turn requests the images from the pictures microservice, 
-having the frontend function as a proxy server for the pictures microservice as seen on figure ...?
+having the frontend function as a proxy server for the pictures microservice as seen on figure \ref{fig:3_pass_through_coupling}?
 This would again lead to pass-through coupling, and passing blob data between several services would exhaust resources.
-
-To avoid this problem, we exposed/publicated the pictures microservice directly to the user as seen on figure...
-Publicating the pictures microservice would of course not be a sustainable solution if the pictures were categorized as private data, 
-and in that case we would have to go with the original solution.
-
+\\  %Provide a little spacing between section and figure
+\begin{figure}[H]
+    \centering
+    \includegraphics[scale=0.4]{img/3_pass_through_coupling.png}
+    \caption{Pass-through coupling from browser to Pictures Service}
+    \label{fig:3_pass_through_coupling}
+\end{figure}
+To avoid this problem, we published the pictures microservice directly to the user as seen on figure \ref{fig:4_pass_through_coupling}
+Publishing the pictures microservice would of course not be a sustainable solution if the pictures were categorized as private data, 
+and in that case we would have to settle with the original solution.
+\begin{figure}[H]
+    \centering
+    \includegraphics[scale=0.4]{img/4_pass_through_coupling.png}
+    \caption{Erased pass-through coupling}
+    \label{fig:4_pass_through_coupling}
+\end{figure}
 
 \subsection{Lazy vs. eager profile creation}
 %TODO: det er faktisk et lidt dårligt Saga eksempel. Men sætter os lidt op til at tale om Application til eksamen og hvordan den er et bedre Saga eksempel.
@@ -136,7 +182,7 @@ Furthermore, our current approach exhibits high temporal coupling as both servic
 
 One way to improve both the resilience and reduce the coupling would be to use an event-based approach.
 Here we could publish an event from the collectives service on deletion and have the Pictures service subscribe to the event. 
-This approach keeps the services referentially decoupled. If we allow the Pictures service to receive notifications form the past they will also be temporally decoupled, 
+This approach keeps the services referentially decoupled. If we allow the Pictures service to receive notifications from the past they will also be temporally decoupled, 
 as the Pictures service can cleanup later, even if it is temporarily unavailable at the time of deletion.
 It does, however, introduce some complexity but ensures eventual consistency and reduces coupling which is a worthwhile trade-off.
 

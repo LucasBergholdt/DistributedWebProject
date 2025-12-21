@@ -195,7 +195,10 @@ the deployment flexibility. An overview is given below.
    When adhering to this interface changes remain backward compatible such that a service can be modified and 
    redeployed without requiring changes in the services that consume its API. 
 \end{itemize}
-
+\begin{comment}
+C-E:
+Evt kald det "RESTful" APIs? Nok ikke vigtigt 
+\end{comment}
 
 
 
@@ -226,10 +229,19 @@ if multiple instances was deployed.
 Furthermore, seperating authentication into its own dedicated microservice, allows us
 to scale the authentication service and frontend independently.
 
+\begin{comment}
+C-E:
+   Alle vores microservices undtagen databaserne er vel stateless? Kunne man godt knytte en kommentar til
+\end{comment}
+
 Another perhaps less apparent way the microservice architecture improves scalability is through
 the technology-agnosticism microservices allow. While our current implementation uses just the
 Flask framework in Python, the architecture allows us to pick the right tool for future services.
-
+\begin{comment}
+C-E:
+   Forstår ikke 100 hvorfor technology-agnosticism promoverer scaling. Derimod kan man argumentere for at det promoverer et mere åbent distribueret system (Openness fra lektion).
+   Jeg knytter faktisk en kommentar til dette i part 4, men det passer nok bedre her i virkeligheden.
+\end{comment}
 
 
 \begin{comment}

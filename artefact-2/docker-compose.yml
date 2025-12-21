@@ -11,9 +11,6 @@ services:
       - COLLECTIVES_API_URL=http://collectives:5000
       - PROFILE_API_URL=http://profile:5000
       - PICTURES_API_URL=http://pictures:5000
-    volumes:                    # debug 
-      - ./frontend:/app         # debug 
-    command: flask run --debug  # debug 
     depends_on:
       - auth
       - collectives
@@ -28,9 +25,6 @@ services:
         # format: # postgresql://user:password@host:port/dbname
         # default user and dbname is postgres.
       - DATABASE_URL=postgresql://postgres:postgres@auth_db:5432/postgres
-    volumes:                    # debug
-      - ./auth:/app             # debug
-    command: flask run --debug  # debug
     depends_on:
       auth_db:
         condition: service_healthy                  # service's "healthiness" is assessed by the field "healthcheck"
@@ -54,9 +48,6 @@ services:
       - "5000"
     environment:
       - DATABASE_URL=postgresql://postgres:postgres@collectives_db:5432/postgres
-    volumes:                    # debug
-      - ./collectives/:/app     # debug
-    command: flask run --debug  # debug
     depends_on:
       collectives_db:
         condition: service_healthy
@@ -80,9 +71,6 @@ services:
       - "5000"
     environment:
       - DATABASE_URL=postgresql://postgres:postgres@profile_db:5432/postgres
-    volumes:                    # debug
-      - ./profile/:/app     # debug
-    command: flask run --debug  # debug
     depends_on:
       profile_db:
         condition: service_healthy
@@ -106,9 +94,6 @@ services:
       - "5004:5000"                                 # Expose pictures service
     environment:
       - DATABASE_URL=postgresql://postgres:postgres@pictures_db:5432/postgres
-    volumes:                    # debug
-      - ./pictures/:/app     # debug
-    command: flask run --debug  # debug
     depends_on:
       pictures_db:
         condition: service_healthy

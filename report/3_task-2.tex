@@ -29,7 +29,7 @@ Microservices should be:
 \subsection{Service boundaries and data management} \label{service_boundaries}
 
 The refactored system consists of five independently deployable services, each with a distinct responsibility.
-A high-level overview of the different microservices and how they interact can be seen on figure X.
+A high-level overview of the different microservices and how they interact can be seen on figure \ref{fig:microservices}.
 The architecture consists of a user-facing Frontend and four microservices: Auth, Profile, Collectives and Pictures.
 
 The \textbf{Frontend} is the primary entry point for users. It acts as an orchestration layer, 
@@ -60,11 +60,18 @@ It acceepts image uploads, stores them with a unique name and serves them on req
 Both the Profile and Collectives services rely on this service to handle their image storage needs.
 
 
+\begin{figure}[H]
+    \makebox[\textwidth][c]{%
+        \includegraphics[width=0.95\linewidth]{img/microservices.png}%
+    }
+    \caption{High-level overview of our microservices architecture}
+    \label{fig:microservices}
+\end{figure}
 
 \subsection{Communication flow}
 %TODO: UML Sequence diagram egner sig nok godt til at tydeliggøre forklaringen.
 
-As figure X shows, none of our microservice talk directly with eachother.
+As figure \ref{fig:microservices} shows, none of our microservice talk directly with eachother.
 Instead all communication goes through the frontend.
 % Hmm måske kort beskriv hvordan frontend er orchestrater, men er jo lidt sagt allerede. 
 An important implication of
@@ -77,6 +84,15 @@ When the user submits their credentials to log in, the frontend calls the authen
 to validate these credentials. If the provided credentials are succesfully verified against the stored ones, the Auth service
 creates a new session in its database and returns the session token.
 The Frontend stores this token in a browser cookie.
+This sequence of operations is illustrated in figure \ref{fig:sequencedia}.
+
+\begin{figure}[H]
+    \makebox[\textwidth][c]{%
+        \includegraphics[width=0.65\linewidth]{img/sequencedia.png}%
+    }
+    \caption{An illustration of the login flow}
+    \label{fig:sequencedia}
+\end{figure}
 
 When users make subsequent requests that require authentication the frontend will receive
 the cookie along with this request. It once again calls Auth, this time asking it to validate
@@ -89,7 +105,7 @@ allows for looser coupling aswell as more fine grained access control.
 However, it also requires that only the frontend is exposed to the outside world, while all the
 endpoints of the microservices are private. This design is reflected in our docker-compose file.
 
-One exception to this is the Pictures microservice which, as illustrated in the figure, is 
+One exception to this is the Pictures microservice which, as illustrated figure \ref{fig:microservices}, is 
 accessed directly from the browser.
 When rendering images, the frontend merely embeds the image path based on the stored
 image name in the Collectives or Profile service.
@@ -98,21 +114,13 @@ This follows the approach for handling images in our monolith, where requests to
 also exposed to the outside world, aswell as the standard web flow, where the browser first retrieves the HTML document
 and then independently fetches embedded resources. 
 
-\begin{figure}[H]
-    \makebox[\textwidth][c]{%
-        \includegraphics[width=1.2\linewidth]{img/microservices.png}%
-    }
-    \caption{High-level overview of our microservices architecture}
-    \label{fig:microservices}
-\end{figure}
 
-
-\subsection{Improvements from initial design}
+\subsection{Improvements from the initial design}
 %TODO: Måske kan man lave en figur der viser de forskellige aspekter og hvilke områder de improver. Lidt ala renzel
 
 The transition from the initial monolithic architecture to a distributed microservice-based architecture
 provides a series of significant improvements. 
-In the following sections we will describe how the transition improves scalability, deployment flexibility and scalability.
+In the following sections we will describe how the transition improves maintainability, deployment flexibility and scalability.
 While these attributes are discussed seperately many of the underlying architectural decisions
 contribute to more than one area.
 
@@ -126,7 +134,7 @@ as they span multiple layers and have increased risk of unintended side effects 
 The microservice architecture significantly improves system maintainability by decomposing the 
 system into a set of smaller focused services with clear boundaries.
 
-Each microservice has a single responsibility and can be viewed and understood in isolation. 
+Each of our microservices has a single responsibility and can be viewed and understood in isolation. 
 This modular design makes each service and the system as a whole easier to understand.
 It also allows us to reason about and modify a specific part of the system without needing a global
 understanding of the codebase.
@@ -209,15 +217,14 @@ In the monolithic system, the application had to be scaled as a single unit.
 This means that increases in load in one part of the system would require scaling the entire applicaiton.
 Even with a multi-tiered architecture we would still have to scale all components of a layer together.
 
-The microservice architecture enables more fine-grained scaling where the individual 
-services can be scaled based on their specific load. As such we can run less requiring
+Our microservice architecture enables more fine-grained scaling where each 
+stateless service can be scaled based on their specific load. As such we can run less requiring
 services on weaker hardware.
 Specifically in our application we would assume that the frontend and authentication service
 would require more scaling as compared to less frequently accessed services like the profile service.
 Importantly, the scaling is flexible as we on-demand can deploy additional instances or scale down
 allowing the system to more efficiently adapt to changes in usage patterns.
 
-%! Her?
 A concrete example of how scalability has been improved is the implemented authentication architecture.
 By centralizing session
 validation in the Auth service and using tokens, the Frontend service itself becomes stateless. 
@@ -234,8 +241,9 @@ C-E:
    Alle vores microservices undtagen databaserne er vel stateless? Kunne man godt knytte en kommentar til
 \end{comment}
 
-Another perhaps less apparent way the microservice architecture improves scalability is through
-the technology-agnosticism microservices allow. While our current implementation uses just the
+While not relevant for scalability as the idea of being able to deploy multiple instances on demand,
+the performance of the system can also be improved through the technology-agnosticism microservices allow.
+While our current implementation uses just the
 Flask framework in Python, the architecture allows us to pick the right tool for future services.
 \begin{comment}
 C-E:

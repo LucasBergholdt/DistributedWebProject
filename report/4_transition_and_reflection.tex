@@ -8,10 +8,12 @@ This approach follows the suggestion by Sam Newman in his book "Building Microse
 \emph{''If you do a big-bang rewrite, the only thing you’re guaranteed of is a big
 bang''} \cite[102]{microservicebook}
 
-Our design choices when transitioning from monolith to microservices focused on achieving a more natural modelling of the business problem domain.
+Our choice of decomposing the monolith into microservices focused on modelling around the business domain rather than techical layers.
 Here, it is an advantage that we have already established an ubiquitous language and bounded context for the domain through our monolithic implementation.
-In Part 2, we artificially divided our functionality based on three kinds of logic related Seekers, Providers and Anonymous users, working via code in all three layers (Figure \ref{fig:container_monolith}).
-The big difference is, that we now use concepts related to the real world such as Collectives, Profiles and Pictures \ref{service_boundaries}.
+In the 2nd section of the report, we artificially divided our functionality based on three kinds of logic related to Seekers, Providers and Anonymous users, 
+working via code in all three layers (Figure \ref{fig:container_monolith}).
+The big difference is, that we now use concepts related to the real world such as Collectives, Profiles and Pictures.
+
 
 % That is, creating microservices around meaningful parts of the product and different business capabilities rather than technical layers.
 % This creates clear service boundaries with components conforming to well-defined interfaces and 
@@ -21,18 +23,19 @@ The big difference is, that we now use concepts related to the real world such a
 
 The first major design decision was figuring out how to move our user authentication and session management from a monolithic to a distributed system.
 Our primary goal was to ensure the frontend could be horizontally scaled with ease as we anticipated it would handle the
-most significant load. This meant going away from the inherent statefulness of the monoliths \verb|current_user| context.
+most significant load. This meant moving away from the inherent statefulness of the monoliths \verb|current_user| context.
 %  towards making a stateless frontend.
 
 One approach was to have each frontend instance store session data in its own memory. This would require maintaining of state
 or use of sticky sessions in the load balancer, which would cause significant limitations to scalability and reduce resilience.
 % Måske kan vi bare skrive "to avoid these isues we made the frotnend sateless"
-To avoid these issues we made the frontend stateless, by being stored in the browser cookie, allowing it to scale easily on demand with multiple interchangable instances.
+To avoid these issues we made the frontend stateless, by storing the session token in the browser cookie, 
+allowing it to scale easily on demand with multiple interchangable instances.
 
 Next we considered how to handle profile data. A solution would be to store this alongside the credentials in the authentication service.
 However, this would contradict the concept of modelling microservices around the business domain and separating concerns since profile information and 
 authentication relates to two different concepts. One being security, another being general personal information.
-This also becomes clear due to the fact that a Provider does not have the need for a personal profile, but still needs to authenticate.
+This also becomes clear due to the fact that a provider does not have the need for a personal profile, but still needs to authenticate.
 Separating handling of authentication and profile into two dedicated microservices also allows us to scale the two services independently.
 
 Another challenge we encountered was how to always provide information about the user's authentication to our HTML templates, as the nav bar adapts based on this.
@@ -42,9 +45,10 @@ Our chosen design utilizes the decorator \texttt{@app.before\_request} to check 
 We use this to populate the \texttt{g.user} object with whether the user is authenticated and their role. By making this available as a variable named 
 \texttt{current\_user} through a context processor we were able to directly reuse the logic of our old templates.
 As we always call the authentication service before requests we also simplified the logic in our routes and \texttt{@login\_required} and \texttt{@role\_required} decorators.
-One downside to the chosen approach is that this function is called on every single non-static request. 
+One downside to the chosen approach is that this function is called on every single request - even static requests. 
 However, by instantly returning from the function in case of static requests this overhead becomes negligible. 
 In the future the design might cause unnecessary overhead if our frontend implements multiple routes that don't render the nav bar.
+
 An additional issue to address was handling images, which can be broken into two subproblems:
 \begin{itemize}
     \item Uploading and storing images
@@ -54,17 +58,17 @@ An additional issue to address was handling images, which can be broken into two
 For the first problem of storing images, an approach would be to have a dedicated database for images that each of the microservices interacted with, 
 as seen on figure \ref{fig:1_common_coupling}.
 This would lead to a coupled architecture where two microservices make use of a common set of data, also called common coupling.
-We reduced the coupling by introducing the minimal wrapper service Pictures that both the Collectives microservice and the Profile microservice interacts with, as seen on figure \ref{fig:2_common_coupling}
+We reduced the coupling by introducing the minimal wrapper service Pictures that both the Collectives microservice and the Profile microservice interacts with, as seen on figure \ref{fig:2_common_coupling}.
 \begin{figure}[h]
     \begin{subfigure}{0.5\textwidth}
         \centering
-        \includegraphics[scale=0.55]{img/1_common_coupling.png}
+        \includegraphics[scale=0.50]{img/1_common_coupling.png}
         \caption{Commonly coupled database}
         \label{fig:1_common_coupling}
     \end{subfigure}
     \begin{subfigure}{0.5\textwidth}
         \centering
-        \includegraphics[scale=0.55]{img/2_common_coupling.png}
+        \includegraphics[scale=0.50]{img/2_common_coupling.png}
         \caption{Wrapper service to erase common coupling}
         \label{fig:2_common_coupling}
     \end{subfigure}
@@ -94,7 +98,7 @@ due to the fact that images would have to be passed from the frontend to these m
 One way to eliminate this coupling is to let the frontend communicate directly with the pictures API, leading to a more loosely coupled architecture as seen on figure \ref{fig:2b_common_coupling}
 \begin{figure}[H]
     \centering
-    \includegraphics[scale=0.6]{img/2b_common_coupling.png}
+    \includegraphics[scale=0.55]{img/2b_common_coupling.png}
     \caption{New architecture with no pass-through coupling}
     \label{fig:2b_common_coupling}
 \end{figure}
@@ -110,7 +114,7 @@ This would again lead to pass-through coupling, and passing blob data between se
     \caption{Pass-through coupling from browser to Pictures Service}
     \label{fig:3_pass_through_coupling}
 \end{figure}
-To avoid this problem, we published the pictures microservice directly to the user as seen on figure \ref{fig:4_pass_through_coupling}
+To avoid this problem, we published the pictures microservice directly to the user as seen on figure \ref{fig:4_pass_through_coupling}.
 Publishing the pictures microservice would of course not be a sustainable solution if the pictures were categorized as private data, 
 and in that case we would have to settle with the original solution.
 \begin{figure}[H]
@@ -161,12 +165,13 @@ In our case lazy profile creation is the right choice as for profile creation as
 
 \subsection{Future improvement}
 One area that can be improved upon is our handling of data consistency
-when deleting collectives from the system.
+when deleting or creating collectives.
 This operation requires coordinating two services (Collectives and Pictures)
-to delete related data, which illustrates the challenge of maintaining consistency
+with related data, which illustrates the challenge of maintaining consistency
 across microservices.
 
-Our current implementation uses a simple sequential approach:
+We will take a closer look at our current implementation of deleting microservices which
+uses a simple sequential approach:
 \begin{enumerate}
     \item Delete the image from Pictures service
     \item Delete the collective from Collectives service
@@ -180,7 +185,7 @@ With this ordering if we fail in step two, the user can at least try to delete t
 However, the data in our system can be left in an inconsistent state which is not optimal.
 % Man kunne også bare nævne at en løsning ville være at anvende en Saga appraoch her og så 
 % eventuelt slette hele "Profile creation" afsnittet.
-Furthermore, our current approach exhibits high temporal coupling as both services must be available simultaneously for the operation to succeed.
+Furthermore, the current approach exhibits high temporal coupling as both services must be available simultaneously for the operation to succeed.
 
 One way to improve both the resilience and reduce the coupling would be to use an event-based approach.
 Here we could publish an event from the collectives service on deletion and have the Pictures service subscribe to the event. 
@@ -190,7 +195,7 @@ It does, however, introduce some complexity but ensures eventual consistency and
 
 
 
-\subsection{Conclusion}
+\subsection{Final thoughts}
 All of these design decisions led us to the chosen autonomous microservices. The design promotes openness, scalability and a high degree of distribution transparency 
 by making the microservices work together without users or applications having to know all the details.
 We strived to only have domain coupling, which is a loose form of coupling, in our system. 

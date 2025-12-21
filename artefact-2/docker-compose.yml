@@ -35,12 +35,11 @@ services:
       auth_db:
         condition: service_healthy                  # service's "healthiness" is assessed by the field "healthcheck"
 
-# postgresql://[user[:password]@][host][:port][/dbname][?param1=value1&param2=value2]
   auth_db:
     image: postgres:17
     restart: always                                 # upon container termination, this container is restarted (untill removal). adviced on https://hub.docker.com/_/postgres
     environment:
-      POSTGRES_PASSWORD: postgres                    # required field for postgres image to use (https://hub.docker.com/_/postgres)
+      POSTGRES_PASSWORD: postgres                    # required env variable for postgres image (https://hub.docker.com/_/postgres)
     volumes:
       - auth_pgdata:/var/lib/postgresql/data
     healthcheck:                                    # determines if a service is "healthy" by running running the command in 'test'. https://docs.docker.com/reference/compose-file/services/#healthcheck
@@ -104,7 +103,7 @@ services:
   pictures:
     build: ./pictures
     ports:
-      - "5004:5000"                                   # Expose pictures service
+      - "5004:5000"                                 # Expose pictures service
     environment:
       - DATABASE_URL=postgresql://postgres:postgres@pictures_db:5432/postgres
     volumes:                    # debug

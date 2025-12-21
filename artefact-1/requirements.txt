@@ -3,8 +3,6 @@ Flask==3.1.*
 WTForms==3.2.*
 Flask-WTF==1.2.*
 Flask-SQLAlchemy==3.1.*
-# PostgreSQL adapter for Python
-# psycopg2-binary==2.9.* slet denne note hvis vi ikke neder med at bruge postgres
 Flask-Principal==0.4.*
 flask_login==0.6.3
 flask_bcrypt==1.0.1

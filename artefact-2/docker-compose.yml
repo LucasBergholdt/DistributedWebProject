@@ -11,9 +11,9 @@ services:
       - COLLECTIVES_API_URL=http://collectives:5000
       - PROFILE_API_URL=http://profile:5000
       - PICTURES_API_URL=http://pictures:5000
-    volumes:                    # debug
-      - ./frontend:/app         # debug
-    command: flask run --debug  # debug
+    volumes:                    # debug 
+      - ./frontend:/app         # debug 
+    command: flask run --debug  # debug 
     depends_on:
       - auth
       - collectives
@@ -25,6 +25,8 @@ services:
     expose:
       - "5000"
     environment:
+        # format: # postgresql://user:password@host:port/dbname
+        # default user and dbname is postgres.
       - DATABASE_URL=postgresql://postgres:postgres@auth_db:5432/postgres
     volumes:                    # debug
       - ./auth:/app             # debug
@@ -35,10 +37,9 @@ services:
 
   auth_db:
     image: postgres:17
+    restart: always                                 # upon container termination, this container is restarted (untill removal). adviced on https://hub.docker.com/_/postgres
     environment:
-      POSTGRES_USER: postgres
-      POSTGRES_PASSWORD: postgres
-      POSTGRES_DB: postgres
+      POSTGRES_PASSWORD: postgres                    # required env variable for postgres image (https://hub.docker.com/_/postgres)
     volumes:
       - auth_pgdata:/var/lib/postgresql/data
     healthcheck:                                    # determines if a service is "healthy" by running running the command in 'test'. https://docs.docker.com/reference/compose-file/services/#healthcheck
@@ -62,10 +63,9 @@ services:
 
   collectives_db:
     image: postgres:17
+    restart: always
     environment:
-      POSTGRES_USER: postgres
-      POSTGRES_PASSWORD: postgres
-      POSTGRES_DB: postgres
+      POSTGRES_PASSWORD: postgres          
     volumes:
       - collectives_pgdata:/var/lib/postgresql/data
     healthcheck:
@@ -89,10 +89,9 @@ services:
 
   profile_db:
     image: postgres:17
+    restart: always 
     environment:
-      POSTGRES_USER: postgres
       POSTGRES_PASSWORD: postgres
-      POSTGRES_DB: postgres
     volumes:
       - profile_pgdata:/var/lib/postgresql/data
     healthcheck:
@@ -104,7 +103,7 @@ services:
   pictures:
     build: ./pictures
     ports:
-      - "5004:5000"                                   # Expose pictures service
+      - "5004:5000"                                 # Expose pictures service
     environment:
       - DATABASE_URL=postgresql://postgres:postgres@pictures_db:5432/postgres
     volumes:                    # debug
@@ -116,10 +115,9 @@ services:
 
   pictures_db:
     image: postgres:17
+    restart: always
     environment:
-      POSTGRES_USER: postgres
       POSTGRES_PASSWORD: postgres
-      POSTGRES_DB: postgres
     volumes:
       - pictures_pgdata:/var/lib/postgresql/data
     healthcheck:

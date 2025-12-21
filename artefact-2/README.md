@@ -19,8 +19,8 @@ The frontend service additionally includes directories templates and static for 
 The templates folder is once again divided further into subfolders for better organization.
 
 
-# Default data  
-The system is populated with 3 default collectives and 2 default users:
+# Default data
+For illustration purposes the system is populated with 3 default collectives and 2 default users:
 Seeker user:
 - email = seeker@gmail.com
 - password = 123

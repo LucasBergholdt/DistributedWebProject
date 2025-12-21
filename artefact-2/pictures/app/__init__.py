@@ -88,11 +88,29 @@ class Pictures(db.Model):
         Picture: The Picture object if found, otherwise None.
     """
     return Pictures.query.filter_by(image_name=image_name).first()
-
-# Clears the database and create tables within the application context
+  
+  
+# For populating the site with some default data for show:
+def create_default_images():
+  default_images = ["1.jpg", "2.jpg", "3.jpg"]
+  
+  for image_name in default_images:
+    # Skip if the image already exists to avoid duplicates
+    if Pictures.get_by_name(image_name):
+      continue
+    
+    image_path = os.path.join("/service/default_images", image_name)
+    
+    # Opening in binary mode to get blob data ("rb")
+    file = open(image_path, "rb")
+    image_data = file.read()
+    
+    Pictures.create_picture(image_name, image_data)
+    
+# Create tables and default pictures
 with app.app_context():
-  db.drop_all() #TODO
   db.create_all()
+  create_default_images()
 
 
 # ROUTES ----------------------------------------------------------------------

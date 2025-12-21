@@ -172,10 +172,20 @@ class Session(db.Model):
     """
     return Session.query.filter_by(token=token).first()
 
-# Clears the database and create tables within the application context
+
+# For populating the site with some default data for show:
+def create_default_userbase():
+  existing_seeker = User.get_by_email("seeker@gmail.com")
+  if not existing_seeker:
+     User.create_user("seeker@gmail.com", "123", "seeker")
+  existing_provider = User.get_by_email("provider@gmail.com")
+  if not existing_provider:
+     User.create_user("provider@gmail.com", "123", "provider")
+
+# Creates tables and default users
 with app.app_context():
-  # db.drop_all() #TODO
   db.create_all()
+  create_default_userbase()
 
 
 

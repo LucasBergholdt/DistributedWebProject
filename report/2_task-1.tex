@@ -4,47 +4,60 @@
 % overvej at beskrive blueprint? nok ikke nødvendigt?
 
 This section will provide a high-level overview of our codebase for the monolithic implementation, and try to map the concrete components to the functionality of our service. 
-It also serves to introduce and document the degree of cohesion and coupling between the components. The section is accompagnied by two diagrams, that we will refer to when relevant (Figure \ref{fig:container_monolith}, Figure \ref{fig:zoom_in_monolith}).
+It also serves to introduce and document the degree of cohesion and coupling between the components. The section is accompanied by two diagrams that we will refer to when relevant (Figure \ref{fig:container_monolith}, Figure \ref{fig:zoom_in_monolith}).
 
 \subsection{Overview}
 
 Our monolith follows a 1-tier layered approach, a modular monolith, deployed as a single unit through the \verb|__init__| file's initialization of the Flask Blueprint framework. The unit is deployed via a single Docker container, and can be ran following the instructions in the \verb|README.md| file. 
 A monolith is a sensible starting point for a software project of our scope, and the main advantage is that we are avoiding the unnecessary complexity of distributed parts. The communication of each layer can be done in a single process, simplifying our development flow and iteration cycles. 
-We decided to value a fast and easy deployment over a, on paper, more fault tolerant and scalable tiered approach. Each module can communicate directly with one another through imports. Representing the organisation of the code in multiple modules is also a good starting point for the later microservice evolution. 
+We decided to value a fast and easy deployment over a more fault tolerant and scalable tiered approach. Modules can communicate directly with one another through imports. Representing the organisation of the code in multiple modules is also a good starting point for the later microservice evolution. 
 
-The monolith is logically organized in layers; each layer with its own responsibility. This means, that we utilize a one-way dependecy from the Presentation Layer, to the Business Logic Layer and the Database Layer.
-Importantly, across the three layers we can also logically group into vertical "slices" based on that code sections relation to the domain problem of Seekers, Providers and Anonymous users (Figure \ref{fig:container_monolith}.).   
-This exemplifies, that even though we have grouped our system in horizontal layers, each layer is dependent on the domain-related code in the layer below. Making any changes to the system therefore requires attention and often manipulation of all three layers, as some code related to that change often is present in all layers. 
+The monolith is logically organized in layers; each layer with its own responsibility. This means that we utilize a one-way dependency from the Presentation Layer to the Business Logic Layer and the Data Layer.
+Importantly, across the three layers we can also logically group into vertical "slices" based on that code section's relation to the domain problem of Seekers, Providers and Anonymous users (Figure \ref{fig:container_monolith}.).   
+This exemplifies that even though we have grouped our system in horizontal layers, each layer is dependent on the domain-related code in the layer below. Making any changes to the system therefore requires attention and often manipulation of all three layers, as some code related to that change often is present in all layers. 
 
 \subsection{Layers, Components and Dependencies}
 
-The Presentation layer consists of the static content in the form of HTML and CSS in \verb|templates| and \verb|static| folders, which are directly dependent on the Business Layer via custom Jinja-conditionals for displaying the correct data.  
-Our domain problem of matching Seekers with Providers of collectives is therefore solved via the pages we render towards the user, and the users interaction with these pages. Each page is visually displayed by the presentation layer, that handles the static structure and styling of the content. 
-The styling utilises the framework Bootstrap, that provides easier development and consistency of the visual identity throughout the site.
-The pages rendered will depend on the identity of that user; whether the user is a Seeker, a Provider or Anonymous (not logged in), which exemplifies how the presentation layer is dependent on the business layer (Figure \ref{fig:container_monolith}). The coupling behind the dependence is only on data, as the Presentation renders the routes present in the functions of the Business layer, but do not depend on the actual implementation details of these routes.
+The Presentation Layer consists of the static content in the form of HTML and CSS in \verb|templates| and \verb|static| folders, which are directly dependent on the Business Logic Layer via custom Jinja-conditionals for displaying the correct data.  
+Our domain problem of matching Seekers with Providers of collectives is therefore solved via the pages we render towards the user, and the users interaction with these pages. Each page is visually displayed by the Presentation Layer, that handles the static structure and styling of the content. 
+The styling utilises the framework Bootstrap that provides easier development and consistency of the visual identity throughout the site.
+The pages rendered will depend on the identity of that user; whether the user is a Seeker, a Provider or Anonymous (not logged in), which exemplifies how the Presentation Layer is dependent on the Business Logic Layer (Figure \ref{fig:container_monolith}). The coupling behind the dependence is only on data, as the Presentation Layer renders the routes present in the functions of the Business Logic Layer, but do not depend on the actual implementation details of these routes.
 
-The business layer implements the logic that tackles the domain problem via the files \verb|auth.py|, \verb|logic.py| and \verb|forms.py|.
+The Business Logic Layer implements the logic that tackles the domain problem via the files \verb|auth.py|, \verb|logic.py| and \verb|forms.py|.
 This is the layer with the highest interdependence between components. The grouping and relationship of components can be seen in Figure \ref{fig:zoom_in_monolith}.
 The main logic is stored in \verb|logic.py|, and within this file we consider the beforementioned different categories of logic. The Provider Logic solves the task of allowing a Provider to view, create and delete their collectives. The Seeker Logic solves the task of allowing a seeker to view and update their own profile. 
-Importantly, the common logic represents the universally available functionality for all user types; the landing page and the overview of collectives. 
-All business logic is dependent on manipulating data from the Database, which is represented by the outer arrow fron the total \verb|logic.py| container to the Database layer. 
+The Common Logic represents the universally available functionality for all user types; the landing page and the overview of collectives. 
+All business logic is dependent on manipulating data from the database, which is represented by the outer arrow fron the total \verb|logic.py| container to the Data Layer. 
 
-Both the seeker and the provider logic is dependent on the authentication of the current user, data about their session, in order to be carried out. This dependency is represented via the thick line from the two components towards the \verb|auth.py| component.
+
+Both the Seeker and the Provider Logic is dependent on the authentication of the current user and data about their session in order to be carried out. This dependency is represented via the thick line from the two components towards the \verb|auth.py| component.
 This gives coupling in the form of a shared global context related to the session cycle of the current user. The logic is therefore somewhat temporally coupled with the authentication flow. 
 The possibility of delegating the actual implementation of the authorization to Flask-Principal greatly reduces complexity.
+\begin{comment}
+C-E:
+Ved ikke om jeg ser "temporally" pointen helt for mig.
+Temporally coupling handler om, såvidt jeg forstår, at 2 services skal være aktive/"tændte" på samme tid for at kommunikere sammen.
+Det kan jeg vel godt se at authentication og logic er, men jeg tror kun man kan snakke om
+temporally coupling i kontekst af Distributed Systems. Her snakker vi slet ikke om 2 forskellige services men én monolit, og er derfor lidt skeptisk om man overhovedet kan snakke om temporally coupling her.
+\end{comment}
 
-All modules and subcategories in the business layer is dependent on \verb|forms.py| in order achieve their respective interaction with the user, 
+All modules and subcategories in the Business Logic Layer is dependent on \verb|forms.py| in order achieve their respective interaction with the user, 
 however, each form is independent from eachother, so we could also have stored each form alongside the relevant logic. It therefore maintains a pure data coupling.
 
-The Database layer consists of stored domain entities in \verb|model.py|, which are the \verb|Collective|, \verb|User|, and \verb|SeekerProfile| classes. 
-Many methods in the Business Layer directly manipulates the data, such as \verb|create_or_update_profile()| in the Seeker Logic.
-The Business Layer is therefore externally coupled with the Database Layer, as manipulation is an Object-Relational Mapping achieved via SQLAlchemy that directly affects the persistant stored data, with the methods using the entire composite data structures.
-The file \verb|images.py| has the responsibility of providng image handling capabilities, and can coupling wise be considered as part of the \verb|model.py| Database layer.
+The Data Layer consists of stored domain entities in \verb|model.py|, which are the \verb|Collective|, \verb|User|, and \verb|SeekerProfile| classes. 
+Many methods in the Business Logic Layer directly manipulates the data, such as \verb|create_or_update_profile()| in the Seeker Logic.
+The Business Logic Layer is therefore externally coupled with the Data Layer, as manipulation is an Object-Relational Mapping achieved via SQLAlchemy that directly affects the persistent stored data, with the methods using the entire composite data structures.
+The file \verb|images.py| has the responsibility of providing image handling capabilities, and can, in regards of coupling, be considered as part of the \verb|model.py| Data Layer.
 
 Overall, the monolith version represents an easy to build ... \textbf{UDDYB}.
-However, the disadvantages of the monolithic layered approach comes from the higher degree of coupling between select parts of the system. While the Presentation layer only is coupled through data links, the internal coupling between components of the Business Layer, and the coupling of the Business Layer with the Database Layer remains somewhat high 
-because of \verb|logic.py|'s common and temporal coupling with \verb|auth.py| and the overall external coupling between the Business Layer and the Database Layer.
+However, the disadvantages of the monolithic layered approach comes from the higher degree of coupling between select parts of the system. While the Presentation Layer only is coupled through data links, the internal coupling between components of the Business Logic Layer, and the coupling of the Business Logic Layer with the Data Layer remains somewhat high 
+because of \verb|logic.py|'s common and temporal coupling with \verb|auth.py| and the overall external coupling between the Business Logic Layer and the Data Layer.
 Another disadvantage is, that almost any changes to the web service therefore requires attention to all layers because of the vertical partition of subcomponents. 
+\begin{comment}
+C-E:
+Første gang vi nævner common coupling her lige pludseligt uden at argumentere for det? Kan i øvrigt ikke se hvordan
+\end{comment}
+
 
 \begin{figure}[H]
     \centering

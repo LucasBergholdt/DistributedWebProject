@@ -345,6 +345,7 @@ def create_default_collectives():
 # Create tables within the application context
 def init_db(app):
     with app.app_context():
+        db.drop_all()
         db.create_all()
         create_default_userbase()
         create_default_collectives()

@@ -16,15 +16,15 @@
     <div class="col-md-10 mx-auto col-lg-5">
       <form class="p-4 p-md-5 border rounded-3 bg-body-tertiary" method="post">
         <h2>Register for an account</h2>
-        <p>{{ form.email.label }}</p>
+        {{ form.email.label }}
         <div class="form-floating mb-3">
           {{ form.email }}
         </div>
-        <p>{{ form.password.label }}</p>
+        {{ form.password.label }}
         <div class="form-floating mb-3">
           {{ form.password }}
         </div>
-        <p>{{ form.confirm.label }}</p>
+        {{ form.confirm.label }}
         <div class="form-floating mb-3">
           {{ form.confirm }}
         </div>
@@ -36,7 +36,7 @@
             Register
           </button>
         </div>
-        
+
         <!-- Error handling for the user -->
         {% for field, errors in form.errors.items() %}
         <div class="text-danger py-1 px-1">

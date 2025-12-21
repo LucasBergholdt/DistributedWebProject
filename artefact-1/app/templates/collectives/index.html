@@ -5,54 +5,57 @@
 <section class="collectives">
   <div class="container row">
     <!-- Header -->
-     <div class="col-3"></div>
+    <div class="col-3"></div>
     <h1 class="display-4 mb-3 mt-5 col-9">
-    Collectives looking for a new resident</a>
-    </h1> 
+      Collectives looking for a new resident</a>
+    </h1>
   </div>
 
   <!-- Filter bar-->
-<div class="container row">
-  <div class="container col-1"></div>
-  <div class="container col-2 ">
-  <form method="get" action="{{ url_for('logic.collectives_index') }}">
-      {{ form.hidden_tag()}}  <!-- Flask WT-Forms security feature -->
-      <div class="form-group mb-3">
-        {{ form.city.label(for="city") }}        
-        {{ form.city(class="form-control", id="city", placeholder="Filter by city") }} <!-- Placeholder needs to be declared for bootstrap to use -->
-      </div>
-      <div class="form-group mb-3">
-        {{ form.price.label(class="form-label") }}
-        {{ form.price(class="form-control", id="price", placeholder="Filter by price") }}
-        <small id="priceHelp" class="form-text text-muted">Maximum</small>
-      </div>
-      <div class="form-group mb-3">
-        {{ form.roomsize.label(class="form-label") }}
-        {{ form.roomsize(class="form-control", id="roomsize", placeholder="Filter by roomsize") }}
-        <small id="roomsizeHelp" class="form-text text-muted">Minimum</small>
-      </div>
-      {{ form.submit(class="form-control") }}
-    </form>
-  </div>
+  <div class="container row">
+    <div class="container col-1"></div>
+    <div class="container col-2 ">
+      <form method="get" action="{{ url_for('logic.collectives_index') }}">
+        {{ form.hidden_tag()}} <!-- Flask WT-Forms security feature -->
+        <div class="form-group mb-3">
+          {{ form.city.label(for="city") }}
+          {{ form.city(class="form-control", id="city", placeholder="Filter by city") }} <!-- Placeholder needs to be declared for bootstrap to use -->
+        </div>
+        <div class="form-group mb-3">
+          {{ form.price.label(class="form-label") }}
+          {{ form.price(class="form-control", id="price", placeholder="Filter by price") }}
+          <small id="priceHelp" class="form-text text-muted">Maximum</small>
+        </div>
+        <div class="form-group mb-3">
+          {{ form.roomsize.label(class="form-label") }}
+          {{ form.roomsize(class="form-control", id="roomsize", placeholder="Filter by roomsize") }}
+          <small id="roomsizeHelp" class="form-text text-muted">Minimum</small>
+        </div>
+        {{ form.submit(class="form-control") }}
+      </form>
+    </div>
 
     {% if not collective_entries and not request.args %}
     <div class="col-2"></div>
     <div class="container col-5 d-flex align-items-center">
-      <p class="lead text-center">No collectives have been created yet. Sign up as a provider and submit the first collective!</p>
+      <p class="lead text-center">No collectives have been created yet. Sign up as a provider and submit the first
+        collective!</p>
     </div>
     <div class="col-2"></div>
 
     {% elif not collective_entries and request.args %}
     <div class="col-2"></div>
     <div class="container col-5 d-flex align-items-center">
-      <p class="lead text-center">We couldn’t find any collectives with these criteria. Consider adjusting your filters.</p>
+      <p class="lead text-center">We couldn’t find any collectives with these criteria. Consider adjusting your filters.
+      </p>
     </div>
     <div class="col-2"></div>
     {% else %}
     <div class="d-flex align-items-start flex-wrap p-3 bg-light container col-9">
       {% for entry in collective_entries %}
       <div class="card mx-2 my-2" style="width: 18rem;">
-        <a href="{{ url_for('logic.collectives_view', id=entry.id)}}"><img class="card-img-top collectiveimage" src="{{ url_for('static', filename='images/' ~ entry.image) }}" alt="Image of a collective"></a>
+        <a href="{{ url_for('logic.collectives_view', id=entry.id)}}"><img class="card-img-top collectiveimage"
+            src="{{ url_for('static', filename='images/' ~ entry.image) }}" alt="Image of a collective"></a>
         <div class="card-body">
           <h5 class="card-title">{{ entry.street }}</h5>
           <h6 class="card-subtitle mb-2 text-muted">{{ entry.city }}</h6>
@@ -60,30 +63,14 @@
         <ul class="list-group list-group-flush">
           <li class="list-group-item">{{ entry.roomsize }} square meters</li>
           <li class="list-group-item">{{ entry.price }} DKK</li>
-        </ul>  
+        </ul>
         <div class="card-body">
           <a href="#" class="card-link">Apply</a>
         </div>
       </div>
       {% endfor %}
     </div>
-  {% endif %}
-</div>
+    {% endif %}
+  </div>
 </section>
 {% endblock body%}
-
-
-<!--
-      <div class="container-s p-0 m-2 border">
-        <div class="container-fluid m-0 p-0">
-          <img src="{{ url_for('static', filename='images/' ~ entry.image) }}" class="collectiveimage" alt="Image of a collective">
-        </div>
-        <div class="container-fluid p-2">
-          <p class="mb-1" >Room is {{ entry.roomsize }} square meters.</p>
-          <p class="mb-1">{{ entry.city }}, {{ entry.street }}</p>
-          <p class="mb-0">{{ entry.price }} DKK</p>
-        </div>
-      </div>
-    </div>
-</section>
--->

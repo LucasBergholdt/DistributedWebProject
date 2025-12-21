@@ -1,14 +1,11 @@
 <!-- Becomes vertical on small machines -->
 <nav class="navbar sticky-top navbar-expand-sm navbar-dark bg-primary">
-    <!-- #TODO: sticky-top=? -->
-    <!-- navbar-dark: white text. -->
-    <!-- bg-primary: blue background color to navbar. -->
 
     <div class="container-fluid">
         <!-- Links -->
-        <a class="navbar-brand" href="{{ url_for('landing') }}">Kollektivportalen</a> <!-- -->
+        <a class="navbar-brand" href="{{ url_for('landing') }}">Kollektivportalen</a>
 
-        <!-- Nedenstående gør, vores menu tilpasser sig smalle viewports!  -->
+        <!-- Makes menu adapt to small viewports -->
         <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarSupportedContent"
             aria-controls="navbarSupportedContent" aria-expanded="false" aria-label="Toggle navigation">
             <span class="navbar-toggler-icon"></span>
@@ -35,12 +32,10 @@
             <ul class="navbar-nav ms-auto"> <!-- Pushes to the right.-->
                 {% if current_user.is_authenticated %}
 
-                <!-- Overvej om vi ønsker dette, kan bare fjernes: -->
                 <li class="nav-item">
                     <span class="nav-link disabled text-light">
                         Logged in
                     </span>
-                    <!-- {{current_user.name}}, {{current_user.role}} -->
                 </li>
                 <li class="nav-item">
                     <a class="nav-link link-light" href="{{ url_for('logout')}}">Log out</a>
@@ -54,8 +49,6 @@
                 </li>
             </ul>
             {% endif %}
-            </ul>
         </div>
-    </div>
     </div>
 </nav>

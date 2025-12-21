@@ -13,22 +13,25 @@ That is, creating microservices around meaningful parts of the product and diffe
 This creates clear service boundaries with components conforming to well-defined interfaces and 
 aligns the architecture with the organisation, encouraging empowered teams that can focus on delivering value within their specific domain.
 
-\subsection{Key design decisions}
+\subsection{Key design decisions in the transition}
 
-The first major design decision was figuring out how to handle user authentication and session management in a distributed system.
+The first major design decision was figuring out how to move our user authentication and session management from a monolithic to a distributed system.
 Our primary goal was to ensure the frontend could be horizontally scaled with ease as we anticipated it would handle the
-most significant load. This meant making a stateless frontend.
+most significant load. This meant going away from the inherent statefulness of the monoliths \verb|current_user| context.
+%  towards making a stateless frontend.
 
 One approach was to have each frontend instance store session data in its own memory. This would require maintaining of state
 or use of sticky sessions in the load balancer, which would cause significant limitations to scalability and reduce resilience.
 % Måske kan vi bare skrive "to avoid these isues we made the frotnend sateless"
-To avoid these issues we made the frontend stateless allowing it to scale easily on demand with multiple interchangable instances.
+To avoid these issues we made the frontend stateless, by being stored in the browser cookie, allowing it to scale easily on demand with multiple interchangable instances.
 
 Next we considered how to handle profile data. A solution would be to store this alongside the credentials in the authentication service.
 However, this would contradict the concept of modelling microservices around the business domain and seperating concerns since profile information and 
 authentication relates to two different concepts. One being security, another being general personal information.
 This also becomes clear due to the fact that a Provider does not have the need for a personal profile, but still needs to authenticate.
 Separating handling of authentication and profile into two dedicated microservices also allows us to scale the two services independently.
+
+% TODO: Overvej at kald dette afsnit for "Challenges encountered", da jeg synes det ændrer karakter af det ovenstående? /Lasse
 
 Another challenge we encountered was how to always provide information about the user's authentication to our HTML templates, as the nav bar adapts based on this.
 Since this information is always needed we didn't want to pass it every time we rendered a template and instead searched for a similar
@@ -69,6 +72,9 @@ and in that case we would have to go with the original solution.
 
 \subsection{Lazy vs. eager profile creation}
 %TODO: det er faktisk et lidt dårligt Saga eksempel. Men sætter os lidt op til at tale om Application til eksamen og hvordan den er et bedre Saga eksempel.
+
+% TODO: Føler ikke dette designvalg skal beskrives her, da det vel ikke er ekslusivt microservices? e.g hvordan tilføjer dette noget nyt, som ikke allerede bliver gjort i monolitten? (selvfølgelig uden put request.)
+% TODO: Derfor bliver det mere beskrivende, også skal det vel i part 3? /Lasse
 Our system implements lazy profile creation, meaning profiles are
 created on-demand when seekers first visit their profile page through
 a PUT request which creates or replaces the profile.
@@ -87,6 +93,7 @@ But for the microservice system we would need a distributed transaction to
 maintain consistency between the separate Auth and Profile databases.
 \end{comment}
 
+% TODO: Denne her del er fin nok, men så kunne man måske korte introduktionen til det ovenover ned.
 One way to achieve this is through the use of a two-phase commit (2PC)
 to ensure that both services either commit or abort the transaction.
 This would prioritize consistency as all nodes commit or abort together,

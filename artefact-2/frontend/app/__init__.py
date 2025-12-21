@@ -113,10 +113,10 @@ def role_required(role_name):
 @app.route("/", methods=('GET','POST'))
 def landing():
   """
-  Landing page.
+  Renders the landing page.
 
   Returns:
-      str: Homepage template
+      str: The landing page template
   """
   response = requests.get(f"{COLLECTIVES_API}/collectives")
   if response.ok:
@@ -136,20 +136,20 @@ def login():
   Login page.
   
   Checks if current session token matches an active session.
-  - If it does, redirects user to home page
+  - If it does, redirects user to landing page
   - If not, render login form and sends requests to auth to log in user
   - On success sets the session cookie
 
   Returns:
       Response | str: Redirect to home or render login template
   """
-  # ---- Check if user already has an active session ----
+  # Check if user already has an active session
   # We already checked with auth service when setting g object so we just check this.
   if g.user["is_authenticated"]:
       flash("Already logged in", "info")
-      return redirect(url_for("landing")) # TODO: Kan man lave noget nice hvor man redirectes tilbage til hvor man var inden man blev sendt til login
+      return redirect(url_for("landing"))
   
-  # ---- User does NOT have an active session, need to login ----
+  # User does NOT have an active session, need to login
   form = LoginForm(request.form)
   if request.method == 'POST' and form.validate():  # Logging in
     email = form.email.data
@@ -163,10 +163,9 @@ def login():
       data = response.json()
       # Set session coookie
       session["user_id"] = data["user_id"]
-      session["role"] = data["role"]
       session["session_token"] = data["session_token"]
       flash("Login successful!", "success")
-      return redirect(url_for("landing")) # TODO: Kan man lave noget nice hvor man redirectes tilbage til hvor man var inden man blev sendt til login
+      return redirect(url_for("landing"))
     else:
       flash(response.json().get("error", "Login failed"), "error")
   
@@ -186,7 +185,7 @@ def register():
   # Can't register while already logged in
   if g.user["is_authenticated"]:
     flash("Already logged in", "info")
-    return redirect(url_for("landing")) # TODO: Kan man lave noget nice hvor man redirectes tilbage til hvor man var inden man blev sendt til login
+    return redirect(url_for("landing"))
 
   form = RegistrationForm(request.form)
   if request.method == 'POST' and form.validate():
@@ -198,10 +197,9 @@ def register():
       # Set up session cookie to log user in. QOL so users don't have to login right after registering
       data = response.json()
       session["user_id"] = data["user_id"]
-      session["role"] = data["role"]
       session["session_token"] = data["session_token"]
       flash("Registration successful", "success")
-      return redirect(url_for('landing')) # TODO: Kan man lave noget nice hvor man redirectes tilbage til hvor man var inden man blev sendt til register
+      return redirect(url_for('landing'))
     else:
       flash("Registration failed", "error")
   
@@ -216,10 +214,11 @@ def logout():
   Log out user by asking auth to delete session entry.
 
   Returns:
-      Response: Redirect to home
+      Response: Redirect to landing page
   """
   token = session.get('session_token')
   if token:
+    # Ask auth to delete session
     response = requests.delete(f"{AUTH_API}/sessions/{token}")
     
     if response.ok:
@@ -254,7 +253,7 @@ def profile():
     if profile.get("birthdate"):
       profile["birthdate"] = date.fromisoformat(profile["birthdate"])
   else:
-    profile = {} # TODO: Pre-populate data here if any? (default data)
+    profile = {} # Empty profile (user hasn't made a profile yet)
   
   form = ProfileForm(data=profile)
   return render_template("profiles/seeker.html", form=form, profile=profile, pictures_url = PICTURES_URL_FROM_HOST)
@@ -265,7 +264,8 @@ def profile():
 @role_required("seeker")
 def create_or_update_profile():
   """
-  Send a PUT request to profile microservice to replace
+  Asks Pictures microservice to save image and then
+  sends a PUT request to profile microservice to replace
   profile info with the newly submitted information.
 
   Returns:
@@ -278,9 +278,10 @@ def create_or_update_profile():
   profile = {}
   profile_response = requests.get(f"{PROFILE_API}/profiles/{user_id}")
   if profile_response.ok:
-    profile = profile_response.json
+    profile = profile_response.json()
   
   if form.validate():
+    # -----------  Handling image -----------
     image_name = profile.get("image_name") # user's current profile picture
     
     if form.image.data:
@@ -293,19 +294,18 @@ def create_or_update_profile():
         )
       }
       
-      # send data as multipart/formdata request to API
+      # Send data as multipart/formdata request to API
       picture_response = requests.post(f"{PICTURES_API}/pictures", files=files)
-      # flash(f"Response code after uploading picture: {picture_response.status_code}") #TODO debug msg
       if picture_response.status_code == 201:
-        # if success, update image_name
+        # If success, update image_name
         data = picture_response.json()
         image_name = data["image_name"]
-        flash("Image was uploaded! Name is" + image_name)
       else:
-        # Picture upload failed. Abort profile update. #TODO Man kunne nok teknisk set godt kun opdatere med det andet information, hvis kun image fejler.
+        # Picture upload failed. Abort profile update.
         flash("Image upload failed. Profile was not saved.", "error")
         return render_template("profiles/seeker.html", form=form, profile=profile, pictures_url=PICTURES_URL_FROM_HOST)
 
+    # -----------  Handling profile update -----------
     profile_data = {
       "name": form.name.data,
       "description": form.description.data,
@@ -336,16 +336,18 @@ def collectives_index():
   """
   Overview of all collectives. 
   Can be accessed by all roles, even anonymous. 
-  User can apply filter.
+  Filters can be applied to only show specific collectives.
+
+  Returns:
+      str: The collective overview page
   """
-  
   filters = SearchForm(request.args)
 
-  # detect if filter has been applied
+  # Detect if filter has been applied
   params = {}
   if request.args:
     if filters.city.data:
-      params['city'] = filters.city.data.capitalize() # todo: ingen capitalize i monolit?
+      params['city'] = filters.city.data.capitalize()
     if filters.price.data:
       params['price'] = filters.price.data
     if filters.roomsize.data:
@@ -371,22 +373,38 @@ def collectives_index():
 
 @app.route("/collectives/<int:id>", methods=["GET"])
 def collectives_view(id):
+  """
+  Page for seeing more information about a specific collective.
+
+  Args:
+      id (int): The ID of the collective
+
+  Returns:
+      The collective's page or on error, a redirect to the collective overview
+  """
+  # Get information about the specific collective
   response = requests.get(f"{COLLECTIVES_API}/collectives/{id}")
   if response.status_code == 200:
     entry = response.json()
-
     return render_template("collectives/view.html", entry=entry, pictures_url=PICTURES_URL_FROM_HOST)
   else:
     flash("Couldn't get collective", "error")
     return redirect(url_for("collectives_index"))
 
+
 @app.route("/provider/collectives", methods=["GET", "POST"])
 @login_required
 @role_required("provider")
 def provider_collectives():
-  # Get the user's id.
+  """
+  The provider's overview of all their collectives
+
+  Returns:
+      str: The provider's overview page
+  """
+  # Get the provider's id.
   user_id = session.get("user_id")
-  # Get all collectives the user has created
+  # Get all collectives the provider has created
   response = requests.get(f"{COLLECTIVES_API}/collectives", params={"submitter_id": user_id})
   
   if response.status_code == 200:
@@ -397,16 +415,24 @@ def provider_collectives():
   
   return render_template("profiles/provider.html", collective_entries=collective_entries, pictures_url=PICTURES_URL_FROM_HOST)
 
+
 @app.route("/collectives/create", methods=["GET", "POST"])
 @login_required
 @role_required("provider")
 def collectives_create():
+  """
+  The page for creating a new collective
+  
+
+  Returns:
+      The collective creation page 
+      or redirect to provider overview on success
+  """
   form = CollectiveForm()
 
   if form.validate_on_submit():
-
+    # Get the image of the collective
     file_storage = form.image.data
-
     files = {
       "file": (
         file_storage.filename,
@@ -414,14 +440,15 @@ def collectives_create():
       )
     }
 
-    # send data as multipart/formdata request to API
+    # Upload image through the Pictures service sending data as multipart/formdata
     response = requests.post(f"{PICTURES_API}/pictures", files = files)
     if response.status_code == 201:
       data = response.json()
       image_name = data["image_name"]
 
+      # Setup all the collective data
       collective_data = {
-        "submitter_id": session.get("user_id"), #TODO Lavet hurtigt af C-E, er det good to go?
+        "submitter_id": session.get("user_id"),
         "city": form.city.data,
         "street": form.street.data,
         "roomsize": form.roomsize.data,
@@ -429,19 +456,23 @@ def collectives_create():
         "description": form.description.data,
         "image_name": image_name
       }
+      # Create the collective
       response = requests.post(f"{COLLECTIVES_API}/collectives", json=collective_data)
       if response.ok:
         flash("Collective created!", "success")
         return redirect(url_for("provider_collectives"))
       else:
-        flash("Error creating collective. Removing previously uploaded image...", "error")  #TODO remove image
+        # Error creating collective. Try to delete the uploaded image.
+        flash("Error creating collective. Removing previously uploaded image...", "error")
         response = requests.delete(f"{PICTURES_API}/pictures/{image_name}")
         if not response.ok:
-          flash("The previously uploaded image could not be deleted.")  #TODO C-E måske bare fjern denne besked til useren? 
+          # Orphaned image
+          flash("The previously uploaded image could not be deleted.")
     else:
       flash("Image could not be uploaded.")
     
   return render_template("collectives/create.html", form=form)
+
 
 @app.route("/collectives/delete/<int:id>", methods=["POST"])
 @login_required
@@ -465,7 +496,6 @@ def collectives_delete(id):
   else:
     flash("Sorry, we couldn't find the collective that you wanted to delete.", 'warning')
     redirect(url_for('provider_collectives'))
-    
   
   # Delete image first
   response = requests.delete(f"{PICTURES_API}/pictures/{image_name}")
@@ -481,4 +511,3 @@ def collectives_delete(id):
     flash("Image was successfully deleted, but not the collective.", "error")
   
   return redirect(url_for('provider_collectives'))
-  

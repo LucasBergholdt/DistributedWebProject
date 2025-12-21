@@ -67,7 +67,11 @@ def collectives_view(id):
         str: The collective page
     """
     entry = Collective.get_by_id(id)
-    return render_template("collectives/view.html", entry=entry)
+    if entry:
+        return render_template("collectives/view.html", entry=entry)
+    else:
+        flash("The collective you were looking for doesn't exist", "error")
+        return redirect(url_for("logic.collectives_index"))
 
 
 # ------------------ ROUTES FOR SEEKERS --------------- #

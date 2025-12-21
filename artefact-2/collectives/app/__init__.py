@@ -54,6 +54,7 @@ class Collective(db.Model):
         """Get all Collectives which cityname has given argument as prefix)"""
         return Collective.query.filter(Collective.city.startswith(city)).all()
     
+    @staticmethod
     def get_by_filters(city=None, roomsize=None, price=None, submitter_id=None):
         """Filters collectives by multiple filters."""
         # Fetch all queries.

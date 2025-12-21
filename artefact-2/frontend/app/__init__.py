@@ -48,7 +48,7 @@ class ProfileForm(FlaskForm):
   birthdate = DateField('Birthdate', format="%Y-%m-%d", validators=[Optional()])
   gender = RadioField('Gender', choices=[('male', 'Male'), ('female', 'Female'), ('other', 'Other')], validators=[Optional()])
   occupation = StringField('Occupation', validators=[Optional(), Length(min=1, max=80, message='You cannot have less than 1 or more than 80 characters')])
-  image = FileField("Profile picture", validators=[FileRequired()])
+  image = FileField("Profile picture", validators=[Optional()])
   submit = SubmitField('Save Profile')
 
 # WTForms for the collective filter
@@ -64,7 +64,7 @@ class CollectiveForm(FlaskForm):
   roomsize = IntegerField('Size of the room available (square meters)', validators=[DataRequired()])
   price = FloatField('Price in DKK', validators=[DataRequired()])
   description = TextAreaField('Describe your collective', validators=[DataRequired(), Length(min=1, max=300, message='You cannot have less than 1 or more than 300 characters')])
-  image = FileField(validators=[Optional()])
+  image = FileField(validators=[FileRequired()])
   submit = SubmitField('Register your collective')
 
 # DECORATORS ----------------------------------------------------------------------
@@ -390,7 +390,7 @@ def collectives_index():
 
   return render_template("collectives/index.html", collective_entries=data, form=filters, pictures_url=PICTURES_URL_FROM_HOST)
 
-#TODO: Crasher når vi går til kollektiv der ikke eksisterer.
+
 @app.route("/collectives/<int:id>", methods=["GET"])
 def collectives_view(id):
   response = requests.get(f"{COLLECTIVES_API}/collectives/{id}")

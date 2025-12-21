@@ -78,7 +78,7 @@ to validate these credentials. If the provided credentials are succesfully verif
 creates a new session in its database and returns the session token.
 The Frontend stores this token in a browser cookie.
 
-When users make subsquent requests that require authentication the frontend will receive
+When users make subsequent requests that require authentication the frontend will receive
 the cookie along with this request. It once again calls Auth, this time asking it to validate
 the token. Internally Auth does this by checking if the token matches a stored token
 in its table of active sessions but the frontend does not need to know about these details.
@@ -98,6 +98,14 @@ This follows the approach for handling images in our monolith, where requests to
 also exposed to the outside world, aswell as the standard web flow, where the browser first retrieves the HTML document
 and then independently fetches embedded resources. 
 
+\begin{figure}[H]
+    \makebox[\textwidth][c]{%
+        \includegraphics[width=1.1\linewidth]{img/microservices.png}%
+    }
+    \caption{High-level overview of our microservices architecture}
+    \label{fig:microservices}
+\end{figure}
+
 
 \subsection{Improvements from initial design}
 %TODO: Måske kan man lave en figur der viser de forskellige aspekter og hvilke områder de improver. Lidt ala renzel
@@ -114,7 +122,7 @@ One of the primary improvements of the microservice-based architecture over the
 original monolithic design is increased maintainability.
 In the monolihtic system business logic, data access and presentation concerns were
 all tightly coupled within a single codebase. This makes changes harder to reason about
-as they span multiple layers and have increased risk of unintended side effects.
+as they span multiple layers and have increased risk of unintended side effects (Figure \ref{fig:container_monolith}).
 The microservice architecture significantly improves system maintainability by decomposing the 
 system into a set of smaller focused services with clear boundaries.
 

@@ -1,0 +1,24 @@
+@startuml
+actor User
+participant "Frontend" as FE
+participant "Auth Service" as AUTH
+database "User DB" as DB
+
+User -> FE: Enter username and password
+FE -> AUTH: POST /sessions
+AUTH -> AUTH: Are these credentials valid?
+AUTH -> DB: Does this user exist?
+
+alt Credentials valid
+    'DB -> AUTH: Return User
+    note over AUTH: Create session.
+    AUTH --> FE: Return Session, Role, User ID, 201 OK 
+    
+    FE -> User: Store token in browser cookie
+    FE --> User: "Login successful"
+else Credentials invalid
+    AUTH --> FE: 401 Unauthorized
+    FE --> User: "Login failed"
+end
+
+@enduml

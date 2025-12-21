@@ -8,10 +8,14 @@ This approach follows the suggestion by Sam Newman in his book "Building Microse
 \emph{''If you do a big-bang rewrite, the only thing you’re guaranteed of is a big
 bang''} \cite[102]{microservicebook}
 
-Our choices of decomposing the monolith into microservices focused on modelling around the business domain.
-That is, creating microservices around meaningful parts of the product and different business capabilities rather than technical layers.
-This creates clear service boundaries with components conforming to well-defined interfaces and 
-aligns the architecture with the organisation, encouraging empowered teams that can focus on delivering value within their specific domain.
+Our design choices when transitioning from monolith to microservices focused on achieving a more natural modelling of the business problem domain.
+Here, it is an advantage that we have already established an ubiquitous language and bounded context for the domain through our monolithic implementation.
+In Part 2, we artificially divided our functionality based on three kinds of logic related Seekers, Providers and Anonymous users, working via code in all three layers (Figure \ref{fig:container_monolith}).
+The big difference is, that we now use concepts related to the real world such as Collectives, Profiles and Pictures \ref{service_boundaries}.
+
+% That is, creating microservices around meaningful parts of the product and different business capabilities rather than technical layers.
+% This creates clear service boundaries with components conforming to well-defined interfaces and 
+% aligns the architecture with the organisation, encouraging empowered teams that can focus on delivering value within their specific domain.
 
 \subsection{Key design decisions in the transition}
 
@@ -31,8 +35,6 @@ authentication relates to two different concepts. One being security, another be
 This also becomes clear due to the fact that a Provider does not have the need for a personal profile, but still needs to authenticate.
 Separating handling of authentication and profile into two dedicated microservices also allows us to scale the two services independently.
 
-% TODO: Overvej at kald dette afsnit for "Challenges encountered", da jeg synes det ændrer karakter af det ovenstående? /Lasse
-
 Another challenge we encountered was how to always provide information about the user's authentication to our HTML templates, as the nav bar adapts based on this.
 Since this information is always needed we didn't want to pass it every time we rendered a template and instead searched for a similar
 solution to the \texttt{current\_user} object always accessible from templates in the monolith.
@@ -40,10 +42,9 @@ Our chosen design utilizes the decorator \texttt{@app.before\_request} to check 
 We use this to populate the \texttt{g.user} object with whether the user is authenticated and their role. By making this available as a variable named 
 \texttt{current\_user} through a context processor we were able to directly reuse the logic of our old templates.
 As we always call the authentication service before requests we also simplified the logic in our routes and \texttt{@login\_required} and \texttt{@role\_required} decorators.
-One downside to the chosen approach is that this function is called on every single request which includes static requests. 
+One downside to the chosen approach is that this function is called on every single non-static request. 
 However, by instantly returning from the function in case of static requests this overhead becomes negligible. 
 In the future the design might cause unnecessary overhead if our frontend implements multiple routes that don't render the nav bar.
-
 An additional issue to address was handling images, which can be broken into two subproblems:
 \begin{itemize}
     \item Uploading and storing images
@@ -57,20 +58,23 @@ We reduced the coupling by introducing the minimal wrapper service Pictures that
 \begin{figure}[h]
     \begin{subfigure}{0.5\textwidth}
         \centering
-        \includegraphics[scale=0.4]{img/1_common_coupling.png}
+        \includegraphics[scale=0.55]{img/1_common_coupling.png}
         \caption{Commonly coupled database}
         \label{fig:1_common_coupling}
     \end{subfigure}
     \begin{subfigure}{0.5\textwidth}
         \centering
-        \includegraphics[scale=0.4]{img/2_common_coupling.png}
+        \includegraphics[scale=0.55]{img/2_common_coupling.png}
         \caption{Wrapper service to erase common coupling}
         \label{fig:2_common_coupling}
     \end{subfigure}
 \caption{Common coupling}
 \label{fig:3}
 \end{figure}
+\newpage
+
 \begin{comment}
+
 C-E: korresponderende WRAP latex kode. Dette var der ikke plads til
 
 \begin{wrapfigure}{r}{0.25\textwidth}
@@ -90,7 +94,7 @@ due to the fact that images would have to be passed from the frontend to these m
 One way to eliminate this coupling is to let the frontend communicate directly with the pictures API, leading to a more loosely coupled architecture as seen on figure \ref{fig:2b_common_coupling}
 \begin{figure}[H]
     \centering
-    \includegraphics[scale=0.4]{img/2b_common_coupling.png}
+    \includegraphics[scale=0.6]{img/2b_common_coupling.png}
     \caption{New architecture with no pass-through coupling}
     \label{fig:2b_common_coupling}
 \end{figure}
@@ -102,7 +106,7 @@ This would again lead to pass-through coupling, and passing blob data between se
 \\  %Provide a little spacing between section and figure
 \begin{figure}[H]
     \centering
-    \includegraphics[scale=0.4]{img/3_pass_through_coupling.png}
+    \includegraphics[scale=0.6]{img/3_pass_through_coupling.png}
     \caption{Pass-through coupling from browser to Pictures Service}
     \label{fig:3_pass_through_coupling}
 \end{figure}
@@ -111,7 +115,7 @@ Publishing the pictures microservice would of course not be a sustainable soluti
 and in that case we would have to settle with the original solution.
 \begin{figure}[H]
     \centering
-    \includegraphics[scale=0.4]{img/4_pass_through_coupling.png}
+    \includegraphics[scale=0.6]{img/4_pass_through_coupling.png}
     \caption{Erased pass-through coupling}
     \label{fig:4_pass_through_coupling}
 \end{figure}
@@ -126,7 +130,6 @@ created on-demand when seekers first visit their profile page through
 a PUT request which creates or replaces the profile.
 This design choice prioritizes simplicity over immediate consistency
 as seekers exist without profiles until they choose to create one.
-
 We also considered eager profile creation, where a seeker's profile would be
 created during registration. This adds a level of consistency but requires distributed transaction to maintain consistency between the separate Auth and Profile databases.
 
@@ -145,7 +148,6 @@ to ensure that both services either commit or abort the transaction.
 This would prioritize consistency as all nodes commit or abort together,
 but sacrifices availability since participants must all be available and 
 wait until a decision is made.
-
 Another approach is to use the Saga pattern.
 That is, instead of using a distributed transaction, we maintain data consistency
 through a sequence of local transactions.
@@ -153,7 +155,7 @@ This could be implemented with a centralized Saga orchestrator.
 Firstly a user in the Auth service would be created. On success, the profile in the Profiles service is created. If this fails, we would either compensate 
 by deleting the user from Auth or repeat the request if we see user creation as the pivot.
 
-In our case lazy profile creation is the right choice as for profile creation the added complexity is not warranted. 
+In our case lazy profile creation is the right choice as for profile creation as the added complexity is not warranted. 
 
 
 
@@ -191,7 +193,7 @@ It does, however, introduce some complexity but ensures eventual consistency and
 \subsection{Conclusion}
 All of these design decisions led us to the chosen autonomous microservices. The design promotes openness, scalability and a high degree of distribution transparency 
 by making the microservices work together without users or applications having to know all the details.
-We strived to only have domain coupling which is a loose form of coupling in our system. 
+We strived to only have domain coupling, which is a loose form of coupling, in our system. 
 The frontend microservice has high centralisation of logic
 having to interact with several downstream microservices, and as such it would have to be replicated and scaled accordingly.
 The next steps of our product development would be the implementation of applications, and in turn

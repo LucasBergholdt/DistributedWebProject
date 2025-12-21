@@ -30,25 +30,7 @@ The Common Logic represents the universally available functionality for all user
 All business logic is dependent on manipulating data from the database, which is represented by the outer arrow fron the total \verb|logic.py| container to the Database Layer. 
 
 Both the Seeker and the Provider Logic is dependent on the authentication of the current user and data about their session in order to be carried out. This dependency is represented via the thick line from the two components towards the \verb|auth.py| component.
-<<<<<<< HEAD
 This gives coupling in the form of a shared global context related to the session cycle of the current user. 
-The possibility of delegating the actual implementation of the authorization to Flask-Principal greatly reduces implementation complexity.
-=======
-This gives coupling in the form of a shared global context related to the session cycle of the current user. The logic is therefore somewhat temporally coupled with the authentication flow. 
-The possibility of delegating the actual implementation of the authorization to Flask-Principal greatly reduces complexity.
-\begin{comment}
-C-E:
-1. Jeg synes vi skal fjerne sidste sætning: "The possibility of delegating the actual implementation of the authorization to Flask-Principal greatly reduces complexity."
-Den står lidt alene synes jeg, og har ikke noget at gøre med koblingen fra Logic layeret og auth.py.
-Eller også misser jeg hvorfor at det har noget at gøre med det.
-
-2.
-Ved ikke om jeg ser "temporally" pointen helt for mig.
-Temporally coupling handler om, såvidt jeg forstår, at 2 services skal være aktive/"tændte" på samme tid for at kommunikere sammen.
-Det kan jeg vel godt se at authentication og logic er, men jeg tror kun man kan snakke om
-temporally coupling i kontekst af Distributed Systems. Her snakker vi slet ikke om 2 forskellige services men én monolit, og er derfor lidt skeptisk om man overhovedet kan snakke om temporally coupling her.
-\end{comment}
->>>>>>> 7f10393 (Figurer+Kommentarer til Part3+4)
 
 All modules and subcategories in the Business Logic Layer is dependent on \verb|forms.py| in order achieve their respective interaction with the user, 
 however, each form is independent from eachother, so we could also have stored each form alongside the relevant logic. It therefore maintains a pure data coupling.
@@ -74,7 +56,7 @@ Another disadvantage is, that almost any changes to the web service therefore re
 
 \begin{figure}[H]
     \makebox[\textwidth][c]{%
-        \includegraphics[width=1.2\linewidth]{img/zoom_in_business_v3.png}%
+        \includegraphics[width=1.1\linewidth]{img/zoom_in_business_v3.png}%
     }
     \caption{Code organisation inside of Business Layer}
     \label{fig:zoom_in_monolith}

@@ -15,48 +15,79 @@ class Collective(db.Model):
     __tablename__ = 'collectives'
 
     id = db.Column(db.Integer, primary_key=True)
-    submitter_id = db.Column(db.Integer, nullable=False)    # had a foreign key before
-
-    city = db.Column(db.String(500))
-    street = db.Column(db.String(500))
-
-    roomsize = db.Column(db.Integer)
-    price = db.Column(db.Double)
-    
-    description = db.Column(db.String(5000)) # todo: ændret til 5000, da debug strengen er for lang til 500. Hvorofr virker det så i monolith?
-    image_name = db.Column(db.String(5000))
-
-    # Overvej konsekvens af manglende "relationships?"
-    # Mere kompleks?
+    submitter_id = db.Column(db.Integer, nullable=False)
+    city = db.Column(db.String(80), nullable=False)
+    street = db.Column(db.String(100), nullable=False)
+    roomsize = db.Column(db.Integer, nullable=False)
+    price = db.Column(db.Double, nullable=False)
+    description = db.Column(db.Text, nullable=False)
+    image_name = db.Column(db.String(500), nullable=False)
 
     @staticmethod
     def get_all():
-        """Get all Collectives"""
+        """
+        Retrieve all collectives
+
+        Returns:
+            List: A list of all the collectives in the database
+        """
         return Collective.query.order_by(Collective.id).all()
     
     @staticmethod
     def get_by_id(id):
-        """Get collective by their ID"""
+        """
+        Retrieve a collective by its ID
+
+        Args:
+            id (int): The ID of the collective
+
+        Returns:
+            Collective: The collective object if found, otherwise None.
+        """
         return Collective.query.filter_by(id=id).first()
 
     @staticmethod
     def get_by_submitter(user_id):
-        """Get all Collectives submitted by a specific user"""
-        return Collective.query.filter_by(submitter_id=user_id).all()
-    
-    @staticmethod
-    def get_by_submitter(user_id):
-        """Get all Collectives submitted by a specific user"""
+        """
+        Retrieve all collectives submitted by a specific user (provider)
+
+        Args:
+            user_id (int): The ID of the user
+
+        Returns:
+            List: A list of all the user's collectives
+        """
         return Collective.query.filter_by(submitter_id=user_id).all()
     
     @staticmethod
     def get_by_city(city):
-        """Get all Collectives which cityname has given argument as prefix)"""
+        """
+        Retrieve collectives by a specific city.
+        Gets collectives in cities that have the given city argument as prefix.
+
+        Args:
+            city (str): The name of a city
+
+        Returns:
+            List: A list of all found collectives
+        """
         return Collective.query.filter(Collective.city.startswith(city)).all()
     
     @staticmethod
     def get_by_filters(city=None, roomsize=None, price=None, submitter_id=None):
-        """Filters collectives by multiple filters."""
+        """
+        Filters collectives by multiple filters.
+        Returns all collectives if no filters are specified.
+
+        Args:
+            city (str, optional): The city the collective should be in. Defaults to None.
+            roomsize (int, optional): The minimum size of the room. Defaults to None.
+            price (float, optional): The maximum price. Defaults to None.
+            submitter_id (int, optional): The id of owner of the collective. Defaults to None.
+
+        Returns:
+            List: A list of all collectives matching the provided filters
+        """
         # Fetch all queries.
         query = Collective.query
 
@@ -74,29 +105,34 @@ class Collective(db.Model):
 
     @classmethod
     def create_collective(cls, submitter_id, city, street, roomsize, price, description, image_name):
-      """
-      Create a new collective with the provided details.
+        """
+        Create a new collective with the provided details.
 
-      Args:
+        Args:
+            submitter_id (int): The ID of the provider
+            city (str): The city the collective is located in
+            street (str): The name of the street
+            roomsize (int): The size of the room in m^2
+            price (double): The price of the room
+            description (int): A description of the collective
+            image_name (str): The name of the image of the collective
 
+        Returns:
+            Collective: The newly created collective object
+        """
+        collective = cls(
+            submitter_id = submitter_id,
+            city = city.strip(),
+            street = street.strip(),
+            roomsize = roomsize,
+            price = price,
+            description = description.strip(),
+            image_name = image_name.strip()
+        )
 
-      Returns:
-          collective: The newly created collective object.
-      """
-      
-      collective = cls(
-          submitter_id = submitter_id,
-          city = city.strip(),
-          street = street.strip(),
-          roomsize = roomsize,
-          price = price,
-          description = description.strip(),
-          image_name = image_name.strip()
-      )
-
-      db.session.add(collective)
-      db.session.commit()
-      return collective
+        db.session.add(collective)
+        db.session.commit()
+        return collective
   
     
     def to_dict(self):
@@ -117,6 +153,8 @@ class Collective(db.Model):
             "image_name": self.image_name
         }
 
+
+# ---------------- Initializing default data ---------------- #
 
 # Description for default collectives
 descr = """
@@ -142,18 +180,23 @@ with app.app_context():
   seed_if_empty()
 
 
+
 # ------------------------------------------ ROUTES ----------------------------------------------------------------------
-# Fetches all collectives. TODO: Support a parameter to fetch only list of collectives.
-    # - List of Seeker's Collectives (that he applied for)
-    # - List of Provider's Collectives
 
 @app.route("/collectives", methods=["GET"])
 def get_collectives():
+    """
+    Fetch all collectives filtering by any given filter params.
+
+    Returns:
+        Response: List of JSON objects with collective information
+    """
     city = request.args.get("city")
     price = request.args.get("price", type=int)
     roomsize = request.args.get("roomsize", type=int)
     submitter_id = request.args.get("submitter_id", type=int)
 
+    # Get collectives by applying filters.
     collectives = Collective.get_by_filters(city, roomsize, price, submitter_id)
     
     return jsonify([e.to_dict() for e in collectives]), 200  # returns list of json objects
@@ -161,6 +204,12 @@ def get_collectives():
 
 @app.route("/collectives", methods=["POST"])
 def post_collectives():
+    """
+    Creates a collective with the given information
+
+    Returns:
+        Response: Information about the created collective or error message.
+    """
     # Get data from request
     data = request.get_json()
     submitter_id = data.get('submitter_id')
@@ -171,9 +220,11 @@ def post_collectives():
     roomsize = data.get('roomsize')
     image_name = data.get('image_name')
 
+    # Ensure all required fields are present
     if not all([submitter_id, price, city, street, description, roomsize, image_name]): # works because None = False
         return jsonify({"error": "Missing data"}), 400
 
+    # Create the collective
     collective = Collective.create_collective(
         submitter_id,
         city,
@@ -185,18 +236,35 @@ def post_collectives():
     )
     return jsonify(collective.to_dict()), 201
 
+
 @app.route("/collectives/<int:id>", methods=["GET"])
 def view_collective(id):
+    """
+    Fetches information about a collective with the given id.
+
+    Args:
+        id (int): ID of the collective
+
+    Returns:
+        Response: JSON object with collective information or error message.
+    """
     entry = Collective.get_by_id(id)
     if entry:
         return jsonify(entry.to_dict()), 200
     else:
         return jsonify({"error": "Collective not found"}), 404
 
+
 @app.route("/collectives/<int:id>", methods=["DELETE"])
 def collectives_delete(id):
-    """ 
-    Deletes a collective entry. 
+    """
+    Deletes the collective entry with the given id.
+    
+    Args:
+        id (int): ID of the collective
+        
+    Returns:
+        Response: JSON object with success or error message
     """
     entry = Collective.get_by_id(id)
     if entry:
@@ -205,47 +273,3 @@ def collectives_delete(id):
         return jsonify({"success": "Collective successfully deleted"}), 200
     else:
         return jsonify({"error": "Collective not found."}), 404
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-""" Old code
-
-
-
-
-@app.route("/collectives/<int:id>", methods=["DELETE"])
-def get_collectives(id):
-    collective = Collective.query.get(id)
-    if not collective:
-        return jsonify({"error": "Not found"}), 404
-    db.session.delete(collective)
-    db.session.commit()
-    return jsonify({"message": "Deleted"}), 200
-
-
-@app.route("/collectives/<int:id>/applications", methods=["GET"])
-def get_collectives(id):
-    applications = Application.get_by_collective(id)
-    return jsonify([{
-       "id": e.id, 
-       "submitter_id": e.submitter_id, 
-       "collective_id": e.collective_id,
-       "time_of_submission": e.time_of_submission,
-       "description": e.description}
-    for e in applications])  # Liste af json objekter.
-"""

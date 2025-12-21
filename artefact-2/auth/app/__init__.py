@@ -8,8 +8,6 @@ app = Flask(__name__)
 
 # Cofnigure SQLAlchemy ORM
 app.config['SQLALCHEMY_DATABASE_URI'] = os.getenv('DATABASE_URL')
-# Secret key for session management and security features 
-app.config['SECRET_KEY'] = "change-me" #TODO Needed?
 
 
 # Data Model ------------------------------------------------------------------
@@ -24,15 +22,18 @@ class User(db.Model):
   """
   __tablename__ = 'users'
 
+  # Primary key
   id = db.Column(db.Integer, primary_key=True)
-  # User's email, it is used as user identification during authentication so must be unique but it can be changed over time
+  # User's email, it is used as user identification during authentication so must be unique
   email = db.Column(db.String(60), unique=True, index=True)
   # User's password, stored as a hash
   password = db.Column(db.String(80))
-  # User's role ('seeker' or 'provider')
-  role = db.Column(db.String(20), nullable=False) #TODO: Could use seperate roles table for better scaling
+  # User's role, used for role-based access control ("seeker" or "provider")
+  role = db.Column(db.String(20), nullable=False)
   
+  # One-Many relationship between User and Session
   sessions = db.relationship("Session", back_populates="user")
+
 
   def check_password(self, password):
     """
@@ -113,22 +114,24 @@ class Session(db.Model):
 
   __tablename__ = 'sessions'
   
+  # Primary key
   id = db.Column(db.Integer, primary_key=True)
+  # ID of the authenticated user
   user_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False)
-  token = db.Column(db.String, unique=True, nullable=False) # should be unique
-  created_at = db.Column(db.DateTime, default=db.func.now())
-  expires_at = db.Column(db.DateTime, nullable=True)  # optional
+  # Token associated with this session, should be unique
+  token = db.Column(db.String, unique=True, nullable=False)
 
+  # One-Many relationship between User and Session
   user = db.relationship("User", back_populates="sessions")
 
+
   @classmethod
-  def create_session(cls, user_id, expiry_date=None):
+  def create_session(cls, user_id):
     """
     Create a new session with the provided details.
 
     Args:
         user_id (str): The user's id
-        expiry_date (DateTime, optional): The date the session should expire. Defaults to None.
 
     Returns:
         Session: The newly created session object.
@@ -137,12 +140,13 @@ class Session(db.Model):
     token = secrets.token_urlsafe(16)
     while (cls.session_exists(token)):
       token = secrets.token_urlsafe(16)
-      
-    session = cls(user_id    = user_id,
-                  token      = token,
-                  expires_at = expiry_date)
+    
+    # Create the session
+    session = cls(user_id = user_id,
+                  token   = token)
     db.session.add(session)
     db.session.commit()
+    
     return session
 
   @staticmethod
@@ -209,21 +213,20 @@ def register():
   password = data.get('password')
   role     = data.get('role')
   
-  # TODO: Bør man tjekke at email og password ikke er null. Vi laver jo altid en forms.validate inden, men kan kan vel teknisk set godt kalde uden det er gjort.
-  # TODO: har gjort det for nu...
   if not all([email, password, role]): # works because None = False
     return jsonify([{"error": "Missing required fields"}]), 400
   
   if (User.email_exists(email)):
-    return jsonify({"error": "Email already exists"}), 400 #TODO: Security risk telling that email exists
+    return jsonify({"error": "Email already exists"}), 400
   else:
-    # Create user and a session
+    # Create user
     user = User.create_user(
       email    = email,
       password = password,
       role     = role
     )
     
+    # Create an authenticated session for the user
     session = Session.create_session(user.id)
     
     return jsonify({"message": "Authenticated (user created)", 
@@ -235,33 +238,19 @@ def register():
   
 @app.route("/sessions", methods=['POST'])
 def login_authentication():
-  #TODO: Præciser rolle. Hvad er interfacet?
   """
-  Login authentication;
-  - Data modtages fra frontend, "/" route. 
-  - Returnerer en respons, der afgør om brugere logges ind. 
-  - En user login session repræsenteres derfor med post - vi laver en ny "session ressource".
+  Validates the users credentials and logs them in by creating a new session.
+  On sucess returns JSON with user id, role and the session token.
 
+  Returns:
+      Response: JSON object with either an error or authentication details.
   """
-  # Get data from request
+  # Get data from request and fetch User object from db
   data = request.get_json()
-  token = data.get('session_token')
   email = data.get('email')
   password = data.get('password')
   user = User.get_by_email(email)
 
-  # TODO: Vi sender aldrig en token med, men i guess det giver god defensive mening at lave dette tjek? Security risk uden?
-  # If the token already exists, the user is already logged in.
-  if token and Session.session_exists(token):
-        session = Session.get_by_token(token)
-        user = User.get_by_id(session.user_id)
-        return jsonify({
-            "message": "Token already exists",
-            "user_id": session.user_id,
-            "role": user.role,
-            "session_token": session.token
-        }), 200
-  
   # Check credentials:
   if user and user.check_password(password):
     # Valid credentials: create session and return user id, role and session token.
@@ -276,21 +265,19 @@ def login_authentication():
     return jsonify({"error": "Invalid credentials"}), 401
 
 
-@app.route("/sessions", methods=['GET'])
-def current_session():
-  #TODO: Burde man gøre det til /session/<token>? Vi prøver jo få en specifik session ud fra en token og ikke alle sessions
+@app.route("/sessions/<string:token>", methods=['GET'])
+def current_session(token):
   """
-  Fetches session information.
-  
-  Expectrs a JSON payload with 'session_token'.
-  - If session with token exists return users id, role, session token and session creation date.
+  Fetches session information for a given token.
+  - If session with token exists return users id, role and session token.
   - If no session with token exists return error.
+
+  Args:
+      token (str): The session token
 
   Returns:
       Response: JSON object with either an error or session details.
   """
-  # Get the token from request params
-  token = request.args.get("session_token")
   # Find the session tied with the token (if any)
   session = Session.get_by_token(token)
 
@@ -302,21 +289,21 @@ def current_session():
     return jsonify({
       "user_id": session.user_id,
       "role": user.role,
-      "session_token": session.token,
-      "created_at": session.created_at.isoformat()  #TODO: Currently not used
+      "session_token": session.token
     }), 200
 
 
-@app.route('/sessions', methods=['DELETE'])
-def logout():
+@app.route('/sessions/<string:token>', methods=['DELETE'])
+def logout(token):
   """
-  Deletes terminated session from the session table upon logout.
+    Deletes terminated session from the session table upon logout.
+
+  Args:
+      token (str): The token associated with the session to delete
 
   Returns:
-      Response: JSON object
+      Response: JSON object with error or success message
   """
-
-  token = request.args.get("session_token") # Request data fra frontend
   session = Session.get_by_token(token)
   if not session:
     return jsonify({"error": "Session not found"}), 404
@@ -325,4 +312,4 @@ def logout():
   db.session.delete(session)
   db.session.commit()
 
-  return jsonify({"message": "Logged out"}), 200  #TODO: Måske slet message og return 204 i stedet.
+  return jsonify({"message": "Logged out"}), 200

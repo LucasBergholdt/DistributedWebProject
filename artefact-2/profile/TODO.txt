@@ -1,1 +1,0 @@
-Skal API understøtte delete profile?

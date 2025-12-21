@@ -39,17 +39,17 @@ class LoginForm(Form):
 # --------- PROVIDERS --------- #
 class CollectiveForm(FlaskForm):
   city = StringField('Name of city', validators=[DataRequired(), Length(min=1, max=80, message='You cannot have less than 1 or more than 80 characters')])
-  street = StringField('Name of street', validators=[DataRequired(), Length(min=1, max=80, message='You cannot have less than 1 or more than 80 characters')])
+  street = StringField('Name of street', validators=[DataRequired(), Length(min=1, max=100, message='You cannot have less than 1 or more than 100 characters')])
   roomsize = IntegerField('Size of the room available (square meters)', validators=[DataRequired()])
   price = FloatField('Price in DKK', validators=[DataRequired()])
-  description = TextAreaField('Describe your collective', validators=[DataRequired(), Length(min=1, max=500, message='You cannot have less than 1 or more than 300 characters')])
+  description = TextAreaField('Describe your collective', validators=[DataRequired()])
   image = FileField(validators=[FileRequired()])
   submit = SubmitField('Register your collective')
 
 # ------------ SEEKERS --------- #
 class ProfileForm(FlaskForm):
   name = StringField('Name', validators=[Optional(), Length(min=1, max=80, message='You cannot have less than 1 or more than 80 characters')])
-  description = TextAreaField('About you', validators=[Optional(), Length(max=500, message='You cannot have more than 500 characters')])
+  description = TextAreaField('About you', validators=[Optional()])
   birthdate = DateField('Birthdate', format="%Y-%m-%d", validators=[Optional()])
   gender = RadioField('Gender', choices=[('male', 'Male'), ('female', 'Female'), ('other', 'Other')], validators=[Optional()])
   occupation = StringField('Occupation', validators=[Optional(), Length(min=1, max=80, message='You cannot have less than 1 or more than 80 characters')])

@@ -3,18 +3,16 @@ from functools import wraps
 import os
 import random
 import requests
-from wtforms import DateField, FloatField, Form, IntegerField, RadioField, SelectField, StringField, SubmitField, EmailField, PasswordField, BooleanField, TextAreaField
-from wtforms.validators import DataRequired, Email, EqualTo, Optional, Length
 from flask import Flask, g, redirect, render_template, request, session, url_for, flash
-from flask_wtf import FlaskForm
-from flask_wtf.file import FileField, FileRequired
+# Our forms
+from .forms import RegistrationForm, LoginForm, ProfileForm, SearchForm, CollectiveForm
 
 app = Flask(__name__)
 
 # WARNING: CSRF protection is disabled for simplicity in this project
 app.config['WTF_CSRF_ENABLED'] = False
 # Secret key for session management and security features
-app.config['SECRET_KEY'] = "change-me" #TODO Få denne fra environment?
+app.config['SECRET_KEY'] = "change-me"
 
 # API URLs to microservices
 AUTH_API = os.getenv('AUTH_API_URL')
@@ -23,54 +21,17 @@ PROFILE_API = os.getenv('PROFILE_API_URL')
 PICTURES_API = os.getenv('PICTURES_API_URL')
 PICTURES_URL_FROM_HOST = "http://localhost:5004/pictures"
 
-# Forms -----------------------------------------------------------------------
-#TODO: Smid over i anden fil og import?
-#TODO: Tilføj length validators i overenstemmelse med database constraints
 
-# WTForms for user registration
-class RegistrationForm(Form):
-  email = EmailField('Email', validators=[DataRequired(), Email()]) #i: formerly had check if email already existed.
-  password = PasswordField('Password', validators=[DataRequired(), EqualTo('confirm', message='Password must match')])
-  confirm = PasswordField('Confirm', validators=[DataRequired()])
-  role = SelectField("Role", choices=[('seeker', 'Seeker'), ('provider', 'Provider')], validators=[DataRequired()])
-  submit = SubmitField('Register')
-
-# WTForms for user login
-class LoginForm(Form):
-  email = EmailField('Email', validators=[DataRequired(), Email()])
-  password = PasswordField('Password', validators=[DataRequired()])
-  remember = BooleanField('Remember Me')
-  submit = SubmitField('Login')
-  
-class ProfileForm(FlaskForm):
-  name = StringField('Name', validators=[Optional(), Length(min=1, max=80, message='You cannot have less than 1 or more than 80 characters')])
-  description = TextAreaField('About you', validators=[Optional(), Length(max=500, message='You cannot have more than 500 characters')])
-  birthdate = DateField('Birthdate', format="%Y-%m-%d", validators=[Optional()])
-  gender = RadioField('Gender', choices=[('male', 'Male'), ('female', 'Female'), ('other', 'Other')], validators=[Optional()])
-  occupation = StringField('Occupation', validators=[Optional(), Length(min=1, max=80, message='You cannot have less than 1 or more than 80 characters')])
-  image = FileField("Profile picture", validators=[Optional()])
-  submit = SubmitField('Save Profile')
-
-# WTForms for the collective filter
-class SearchForm(FlaskForm):
-  city = StringField('Filter by city', validators=[Length(min=1, max=80, message='You cannot have less than 1 or more than 80 characters')])
-  roomsize = IntegerField('Size of room')
-  price = IntegerField('Price in DKK')
-  submit = SubmitField('Search')
-  
-class CollectiveForm(FlaskForm):
-  city = StringField('Name of city', validators=[DataRequired(), Length(min=1, max=80, message='You cannot have less than 1 or more than 80 characters')])
-  street = StringField('Name of street', validators=[DataRequired(), Length(min=1, max=80, message='You cannot have less than 1 or more than 80 characters')])
-  roomsize = IntegerField('Size of the room available (square meters)', validators=[DataRequired()])
-  price = FloatField('Price in DKK', validators=[DataRequired()])
-  description = TextAreaField('Describe your collective', validators=[DataRequired(), Length(min=1, max=300, message='You cannot have less than 1 or more than 300 characters')])
-  image = FileField(validators=[FileRequired()])
-  submit = SubmitField('Register your collective')
 
 # DECORATORS ----------------------------------------------------------------------
 
 @app.before_request
-def load_auth_context():  
+def load_auth_context():
+  """
+  Called before every request.
+  Asks authentication service whether the current token matches an active session.
+  Sets 'is_authenticated' and 'role' fields in g.user object based on the answer.
+  """
   # Skip static files
   if request.endpoint == "static":
     return
@@ -86,7 +47,7 @@ def load_auth_context():
     return # not authenticated
   
   # session_token is not empty:
-  response = requests.get(f"{AUTH_API}/sessions", params={"session_token": token})
+  response = requests.get(f"{AUTH_API}/sessions/{token}")
   
   if response.ok:
     data = response.json()
@@ -102,14 +63,22 @@ def load_auth_context():
 
 @app.context_processor
 def inject_user():
+  """
+  Injects g.user as current_user so it is usable from all templates.
+  Importantly, this means that referncing 'current_user' in templates 
+  has nothing to do with the Flask-Login proxy of the same name.
+
+  Returns:
+      dict: current_user object with fields 'is_authenticated' and 'role'
+  """
   return dict(current_user=g.user)
 
 
 def login_required(f):
   """
   Decorator to require authentication.
-  Just checks if g.user is authenticated since g.user is
-  always set before this decorator is called.
+  Just checks if g.user is authenticated since g.user 
+  is always set before this decorator is called.
   """
   @wraps(f)
   def decorated_function(*args, **kwargs):
@@ -121,9 +90,16 @@ def login_required(f):
 
 
 def role_required(role_name):
+  """
+  Decorator to require specific role.
+  Just checks if g.user has given role since g.user 
+  is always set before this decorator is called.
+
+  Args:
+      role_name (str): name of the required role
+  """
   def decorator(f):
     @wraps(f)
-    @login_required   # Also requires login
     def decorated_function(*args, **kwargs):
       if g.user["role"] != role_name:
         flash(f"Access denied.", "error")
@@ -244,7 +220,7 @@ def logout():
   """
   token = session.get('session_token')
   if token:
-    response = requests.delete(f"{AUTH_API}/sessions", params={"session_token": token})
+    response = requests.delete(f"{AUTH_API}/sessions/{token}")
     
     if response.ok:
       session.clear()
@@ -259,7 +235,8 @@ def logout():
 
 # PROFILE ROUTES ------------------------------------------------------------------ 
 @app.route("/profile", methods=['GET'])
-@role_required("seeker")  # Also ensures user is authenticated
+@login_required
+@role_required("seeker")
 def profile():
   """
   The seeker's profile page.
@@ -267,7 +244,7 @@ def profile():
   Returns:
       str: The profile page with seeker's profile info if any
   """
-  user_id = session.get("user_id") # Safe because @role_required ensures user is authenticated
+  user_id = session.get("user_id") # Safe because @login_required ensures user is authenticated
   
   response = requests.get(f"{PROFILE_API}/profiles/{user_id}")
   
@@ -284,6 +261,7 @@ def profile():
   
   
 @app.route("/profile", methods=['POST'])
+@login_required
 @role_required("seeker")
 def create_or_update_profile():
   """
@@ -293,7 +271,7 @@ def create_or_update_profile():
   Returns:
       Response | str: The profile page
   """
-  user_id = session.get("user_id") # Safe because @role_required ensures user is authenticated
+  user_id = session.get("user_id") # Safe because @login_required ensures user is authenticated
   form = ProfileForm()
   
   # Fetch the existing profile for rendering in case of error and to get old image name
@@ -403,6 +381,7 @@ def collectives_view(id):
     return redirect(url_for("collectives_index"))
 
 @app.route("/provider/collectives", methods=["GET", "POST"])
+@login_required
 @role_required("provider")
 def provider_collectives():
   # Get the user's id.
@@ -419,6 +398,7 @@ def provider_collectives():
   return render_template("profiles/provider.html", collective_entries=collective_entries, pictures_url=PICTURES_URL_FROM_HOST)
 
 @app.route("/collectives/create", methods=["GET", "POST"])
+@login_required
 @role_required("provider")
 def collectives_create():
   form = CollectiveForm()
@@ -464,35 +444,41 @@ def collectives_create():
   return render_template("collectives/create.html", form=form)
 
 @app.route("/collectives/delete/<int:id>", methods=["POST"])
+@login_required
+@role_required("provider")
 def collectives_delete(id):
-    """ 
-    Deletes a collective entry. Method is POST because HTML cannot send DELETE requests. 
-    """
+  """
+  Deletes a collective entry. 
+  Method is POST because forms cannot send DELETE requests. 
 
-    # fetch image name before deletion
-    image_name = None
+  Args:
+      id (int): Id of the collective to delete
 
-    response = requests.get(f"{COLLECTIVES_API}/collectives/{id}")
-    if response.ok:
-      data = response.json()
-      image_name = data["image_name"]
-    else:
-      flash("Sorry, we couldn't find the collective that you wanted to delete.", 'warning')
-      redirect(url_for('provider_collectives'))
-      
+  Returns:
+      Response: Redirect to provider's overview of their collectives
+  """
+  # Fetch collcetive so we can get the name of its image
+  response = requests.get(f"{COLLECTIVES_API}/collectives/{id}")
+  if response.ok:
+    data = response.json()
+    image_name = data["image_name"]
+  else:
+    flash("Sorry, we couldn't find the collective that you wanted to delete.", 'warning')
+    redirect(url_for('provider_collectives'))
     
-    # Delete image first
-    response = requests.delete(f"{PICTURES_API}/pictures/{image_name}")
-    if not response.ok:
-      flash("Failed to delete image. Please try again.", "error")
-      return redirect(url_for('provider_collectives'))
-    
-    # Then try to delete collective
-    response = requests.delete(f"{COLLECTIVES_API}/collectives/{id}")
-    if response.ok:
-        flash("Collective deleted.","success")
-    else:
-      flash("Image was successfully deleted, but not the collective.", "error")
-    
+  
+  # Delete image first
+  response = requests.delete(f"{PICTURES_API}/pictures/{image_name}")
+  if not response.ok:
+    flash("Failed to delete image. Please try again.", "error")
     return redirect(url_for('provider_collectives'))
+  
+  # Then try to delete collective - can fail leaving collective with no image. 
+  response = requests.delete(f"{COLLECTIVES_API}/collectives/{id}")
+  if response.ok:
+      flash("Collective deleted.","success")
+  else:
+    flash("Image was successfully deleted, but not the collective.", "error")
+  
+  return redirect(url_for('provider_collectives'))
   

@@ -1,4 +1,3 @@
-
 from datetime import date
 import os
 from flask import Flask, jsonify, request
@@ -9,7 +8,6 @@ app = Flask(__name__)
 
 # Cofnigure SQLAlchemy ORM
 app.config['SQLALCHEMY_DATABASE_URI'] = os.getenv('DATABASE_URL')
-#TODO secret key?
 
 
 # Data Model ------------------------------------------------------------------
@@ -17,19 +15,18 @@ app.config['SQLALCHEMY_DATABASE_URI'] = os.getenv('DATABASE_URL')
 db = SQLAlchemy(app)
 
 class SeekerProfile(db.Model):
-    
     __tablename__ = 'seekerprofiles'
-
+    
     # Primary key
     id = db.Column(db.Integer, primary_key=True)
     user_id = db.Column(db.Integer, unique=True, nullable=False) # Users can only have 1 profile
     name = db.Column(db.String(80), nullable=True)
-    description = db.Column(db.String(500), nullable=True)
+    description = db.Column(db.Text, nullable=True)
     birthdate = db.Column(db.Date, nullable=True)
-    gender = db.Column(db.String(80), nullable=True)
+    gender = db.Column(db.String(20), nullable=True)
     occupation = db.Column(db.String(80), nullable=True)
-    image_name = db.Column(db.String(500), nullable=True)    # TODO: how fully should we support this?
-    
+    image_name = db.Column(db.String(500), nullable=True)
+
     @classmethod
     def create_seekerprofile(cls, user_id, name, description, birthdate, gender, occupation, image_name):
         """
@@ -37,20 +34,20 @@ class SeekerProfile(db.Model):
 
         Args:
             user_id (int): User's id
-            name (str): User's name
-            description (str): A description of the user
-            birthdate (Date): User's date of birth
-            gender (str): User's gender
-            occupation (str): User's occupation
-            image_name (str): User's profile picture
+            name (str | None): User's name
+            description (str | None): A description of the user
+            birthdate (Date | None): User's date of birth
+            gender (str | None): User's gender
+            occupation (str | None): User's occupation
+            image_name (str| None): Name of user's profile picture
 
         Returns:
             SeekerProfile: The newly created profile object
         """
-        print("DEBUG: Entered create_seekerprofile")
+        # Transform birthdate to date object if present
         if birthdate:
             birthdate = (date.fromisoformat(birthdate))
-        #TODO Har fjernet .strip() fordi felterne godt kan være None. Men vi skal nok stadig have strip funktionalitet.
+        # Create profile
         seekerprofile = cls(
                             user_id = user_id,
                             name = name,
@@ -61,9 +58,7 @@ class SeekerProfile(db.Model):
                             image_name = image_name
                             )
         db.session.add(seekerprofile)
-        print("DEBUG: About to commit new profile")
         db.session.commit()
-        print("DEBUG: Commit succesful")
         return seekerprofile
     
     @staticmethod
@@ -180,25 +175,3 @@ def put_profile(user_id):
         status_code = 201
     
     return jsonify(profile.to_dict()), status_code
-
-
-#TODO: Skal API understøtte dette?
-@app.route("/profiles/<int:user_id>", methods=["DELETE"])
-def delete_profile(user_id):
-    """
-    Delete the profile associated with the given user id if it exists
-
-    Args:
-        user_id (int): User's id
-
-    Returns:
-        Response: 204 on success, 404 if profile doesn't exist
-    """
-    profile = SeekerProfile.get_by_user_id(user_id)
-
-    if not profile:
-        return jsonify({"error": "Profile not found"}), 404
-    else:
-        db.session.delete(profile)
-        db.session.commit()
-        return "", 204

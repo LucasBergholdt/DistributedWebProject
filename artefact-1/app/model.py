@@ -18,12 +18,12 @@ class User(UserMixin, db.Model):
 
     # Primary key
     id = db.Column(db.Integer, primary_key=True)
-    # User's email, it is used as user identification during authentication so must be unique but it can be changed over time
-    email      = db.Column(db.String(60), unique=True, index=True)
+    # User's email, it is used as user identification during authentication so must be unique
+    email = db.Column(db.String(60), unique=True, index=True)
     # User's password, stored as a hash
-    password   = db.Column(db.String(80))
-    # User's role, used for role-based access control. "seeker", "provider"
-    role = db.Column(db.String(80), nullable=False)
+    password = db.Column(db.String(80))
+    # User's role, used for role-based access control ("seeker" or "provider")
+    role = db.Column(db.String(20), nullable=False)
     
     # One-Many relationship between User and Application
     applications = db.relationship("Application", back_populates="user")
@@ -49,7 +49,7 @@ class User(UserMixin, db.Model):
       Create a new user with the provided details.
 
       Args:
-          role (str): The user's role.
+          role (str): The user's role, either 'seeker' or 'provider'
           email (str): The user's email.
           password (str): The user's password, which will be hashed before storage.
 
@@ -113,9 +113,9 @@ class SeekerProfile(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     user_id = db.Column(db.Integer, db.ForeignKey('users.id'), unique=True, nullable=False)
     name = db.Column(db.String(80), nullable=True)
-    description = db.Column(db.String(500), nullable=True)
+    description = db.Column(db.Text, nullable=True)
     birthdate = db.Column(db.Date, nullable=True)
-    gender = db.Column(db.String(80), nullable=True)
+    gender = db.Column(db.String(20), nullable=True)
     occupation = db.Column(db.String(80), nullable=True)
     image = db.Column(db.String(500), nullable=True) # image name
 
@@ -131,7 +131,7 @@ class SeekerProfile(db.Model):
             birthdate (Date | None): User's date of birth
             gender (str | None): User's gender
             occupation (str | None): User's occupation
-            image (str| None): User's profile picture
+            image (str| None): Name of user's profile picture
 
         Returns:
             SeekerProfile: The newly created profile object
@@ -200,11 +200,11 @@ class Collective(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     submitter_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False)
     city = db.Column(db.String(80), nullable=False)
-    street = db.Column(db.String(80), nullable=False)
+    street = db.Column(db.String(100), nullable=False)
     roomsize = db.Column(db.Integer, nullable=False)
     price = db.Column(db.Double, nullable=False)
-    description = db.Column(db.String(500), nullable=False)
-    image = db.Column(db.String(500), nullable=False) #image name.
+    description = db.Column(db.Text, nullable=False)
+    image = db.Column(db.String(500), nullable=False) # image name.
   
     # Many-One relationship between Collective and User
     user = db.relationship("User", back_populates="collectives")
@@ -265,6 +265,7 @@ class Collective(db.Model):
     def get_by_filters(city=None, roomsize=None, price=None):
         """
         Filters collectives by multiple filters.
+        Returns all collectives if no filters are specified.
 
         Args:
             city (str, optional): The city the collective should be in. Defaults to None.

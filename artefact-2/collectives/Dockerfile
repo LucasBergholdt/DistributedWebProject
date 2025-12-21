@@ -2,7 +2,7 @@ FROM python:3.11-slim
 
 WORKDIR /service
 
-# Copy everything in auth folder
+# Copy everything in collectives folder
 COPY . .
 
 # Install dependencies

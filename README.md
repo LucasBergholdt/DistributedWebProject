@@ -15,7 +15,7 @@ The project contains the same domain in two architectural styles:
 - Server-rendered templates with role-based navigation and access
 - SQLite persistence and image upload handling
 
-## 2) Microservices (artefact-2)
+### 2) Microservices (artefact-2)
 - Service-oriented decomposition with clear boundaries:
   - Frontend (orchestration + UI)
   - Auth (users, sessions, tokens)
